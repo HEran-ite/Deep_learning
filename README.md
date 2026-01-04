@@ -13,8 +13,9 @@ This project implements a fruit recognition system that can classify 10 differen
 6. Papaya
 7. Pineapple
 8. Lemon
-9. Strawberry
-10. Grape
+9. Watermelon
+10. Tomato
+
 
 ## 🎯 Project Goals
 
