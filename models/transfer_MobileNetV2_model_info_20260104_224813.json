@@ -1,0 +1,25 @@
+{
+  "model_type": "transfer",
+  "base_model": "MobileNetV2",
+  "num_classes": 10,
+  "class_names": [
+    "Apple",
+    "Avocado",
+    "Banana",
+    "Lemon",
+    "Mango",
+    "Orange",
+    "Papaya",
+    "Pineapple",
+    "Tomato",
+    "Watermelon"
+  ],
+  "epochs": 50,
+  "batch_size": 32,
+  "learning_rate": 0.001,
+  "img_size": [
+    224,
+    224
+  ],
+  "timestamp": "20260104_224813"
+}

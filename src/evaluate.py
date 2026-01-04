@@ -13,6 +13,16 @@ import tensorflow as tf
 from tensorflow import keras
 from PIL import Image
 
+# Support for HEIC images (Apple format)
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+    HEIC_SUPPORT = True
+except ImportError:
+    HEIC_SUPPORT = False
+    print("Warning: pillow-heif not installed. HEIC images may not load properly.")
+    print("Install with: pip install pillow-heif")
+
 from data_preprocessing import FruitDataset
 
 
@@ -61,23 +71,28 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
     accuracy = np.mean(predicted_classes == true_classes)
     print(f"\nTest Accuracy: {accuracy:.4f}")
     
-    # Classification report
+    # Classification report - include all classes even if not in test set
+    labels = list(range(num_classes))
     report = classification_report(
         true_classes,
         predicted_classes,
+        labels=labels,
         target_names=class_names,
-        output_dict=True
+        output_dict=True,
+        zero_division=0
     )
     
     print("\nClassification Report:")
     print(classification_report(
         true_classes,
         predicted_classes,
-        target_names=class_names
+        labels=labels,
+        target_names=class_names,
+        zero_division=0
     ))
     
-    # Confusion matrix
-    cm = confusion_matrix(true_classes, predicted_classes)
+    # Confusion matrix - include all classes
+    cm = confusion_matrix(true_classes, predicted_classes, labels=labels)
     
     # Plot confusion matrix
     plt.figure(figsize=(12, 10))
@@ -93,8 +108,14 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
     print(f"\nConfusion matrix saved to: {save_dir}/confusion_matrix.png")
     plt.close()
     
-    # Per-class accuracy
-    per_class_accuracy = cm.diagonal() / cm.sum(axis=1)
+    # Per-class accuracy (handle division by zero for classes not in test set)
+    per_class_accuracy = []
+    for i in range(num_classes):
+        if cm.sum(axis=1)[i] > 0:
+            per_class_accuracy.append(cm[i, i] / cm.sum(axis=1)[i])
+        else:
+            per_class_accuracy.append(0.0)
+    per_class_accuracy = np.array(per_class_accuracy)
     plt.figure(figsize=(10, 6))
     plt.bar(range(len(class_names)), per_class_accuracy)
     plt.xlabel('Fruit Class')
@@ -194,8 +215,11 @@ def predict_single_image(model_path, image_path, class_names, img_size=(224, 224
     # Load model
     model = keras.models.load_model(model_path)
     
-    # Load and preprocess image
+    # Load and preprocess image (supports HEIC)
     img = Image.open(image_path)
+    # Convert to RGB if necessary (for HEIC and other formats)
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
     img = img.resize(img_size)
     img_array = np.array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)

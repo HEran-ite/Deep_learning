@@ -1,6 +1,6 @@
 """
 Model Architecture Module
-Contains CNN models for fruit recognition (both from scratch and transfer learning)
+Professional CNN models optimized for high performance
 """
 
 import tensorflow as tf
@@ -8,48 +8,130 @@ from tensorflow import keras
 from tensorflow.keras import layers, models
 from tensorflow.keras.applications import MobileNetV2, ResNet50, EfficientNetB0
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input as mobilenet_preprocess
+from tensorflow.keras.regularizers import l2
+
+
+def residual_block(x, filters, kernel_size=3, stride=1, name_prefix=''):
+    """
+    ResNet-style residual block with skip connection
+    
+    Args:
+        x: Input tensor
+        filters: Number of filters
+        kernel_size: Conv kernel size
+        stride: Stride for first conv
+        name_prefix: Prefix for layer names
+        
+    Returns:
+        Output tensor with residual connection
+    """
+    kernel_initializer = 'he_normal'
+    
+    # Main path
+    y = layers.Conv2D(filters, kernel_size, 
+                      strides=stride, 
+                      padding='same',
+                      kernel_initializer=kernel_initializer,
+                      name=f'{name_prefix}_conv1')(x)
+    y = layers.BatchNormalization(name=f'{name_prefix}_bn1')(y)
+    y = layers.Activation('relu', name=f'{name_prefix}_relu1')(y)
+    
+    y = layers.Conv2D(filters, kernel_size,
+                      strides=1,
+                      padding='same',
+                      kernel_initializer=kernel_initializer,
+                      name=f'{name_prefix}_conv2')(y)
+    y = layers.BatchNormalization(name=f'{name_prefix}_bn2')(y)
+    
+    # Shortcut connection
+    if stride != 1 or x.shape[-1] != filters:
+        # Need to adjust dimensions for skip connection
+        shortcut = layers.Conv2D(filters, 1,
+                                 strides=stride,
+                                 padding='same',
+                                 kernel_initializer=kernel_initializer,
+                                 name=f'{name_prefix}_shortcut_conv')(x)
+        shortcut = layers.BatchNormalization(name=f'{name_prefix}_shortcut_bn')(shortcut)
+    else:
+        shortcut = x
+    
+    # Add skip connection
+    y = layers.Add(name=f'{name_prefix}_add')([y, shortcut])
+    y = layers.Activation('relu', name=f'{name_prefix}_relu2')(y)
+    
+    return y
 
 
 def build_cnn_from_scratch(input_shape=(224, 224, 3), num_classes=10):
     """
-    Build a CNN model from scratch
+    Build ResNet-style CNN model from scratch with residual blocks
+    
+    Architecture:
+    - Initial conv + pooling
+    - 3 residual blocks (32→64→128 filters)
+    - Global Average Pooling
+    - 2 dense layers with dropout
+    - Total: ~728K parameters
     
     Args:
         input_shape: Shape of input images (height, width, channels)
         num_classes: Number of fruit classes
         
     Returns:
-        Compiled Keras model
+        Keras model
     """
-    model = models.Sequential([
-        # First Conv Block
-        layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
-        layers.MaxPooling2D((2, 2)),
-        
-        # Second Conv Block
-        layers.Conv2D(64, (3, 3), activation='relu'),
-        layers.MaxPooling2D((2, 2)),
-        
-        # Third Conv Block
-        layers.Conv2D(128, (3, 3), activation='relu'),
-        layers.MaxPooling2D((2, 2)),
-        
-        # Fourth Conv Block
-        layers.Conv2D(128, (3, 3), activation='relu'),
-        layers.MaxPooling2D((2, 2)),
-        
-        # Flatten
-        layers.Flatten(),
-        
-        # Dense Layers
-        layers.Dense(512, activation='relu'),
-        layers.Dropout(0.5),
-        layers.Dense(128, activation='relu'),
-        layers.Dropout(0.3),
-        
-        # Output Layer
-        layers.Dense(num_classes, activation='softmax')
-    ])
+    kernel_initializer = 'he_normal'
+    
+    # Input
+    inputs = layers.Input(shape=input_shape, name='input')
+    
+    # Initial normalization
+    x = layers.Rescaling(1./255, name='rescale')(inputs)
+    
+    # Initial conv block
+    x = layers.Conv2D(32, (7, 7), 
+                     strides=2,
+                     padding='same',
+                     kernel_initializer=kernel_initializer,
+                     name='initial_conv')(x)
+    x = layers.BatchNormalization(name='initial_bn')(x)
+    x = layers.Activation('relu', name='initial_relu')(x)
+    x = layers.MaxPooling2D((3, 3), strides=2, padding='same', name='initial_pool')(x)
+    
+    # Residual blocks
+    x = residual_block(x, filters=32, stride=1, name_prefix='res_block1')
+    x = residual_block(x, filters=32, stride=1, name_prefix='res_block1b')
+    
+    x = residual_block(x, filters=64, stride=2, name_prefix='res_block2')
+    x = residual_block(x, filters=64, stride=1, name_prefix='res_block2b')
+    
+    x = residual_block(x, filters=128, stride=2, name_prefix='res_block3')
+    x = residual_block(x, filters=128, stride=1, name_prefix='res_block3b')
+    
+    # Global Average Pooling
+    x = layers.GlobalAveragePooling2D(name='gap')(x)
+    
+    # Dense layers
+    x = layers.Dense(128, 
+                    kernel_initializer=kernel_initializer,
+                    name='dense1')(x)
+    x = layers.BatchNormalization(name='bn_dense1')(x)
+    x = layers.Activation('relu', name='relu_dense1')(x)
+    x = layers.Dropout(0.4, name='dropout1')(x)
+    
+    x = layers.Dense(64,
+                    kernel_initializer=kernel_initializer,
+                    name='dense2')(x)
+    x = layers.BatchNormalization(name='bn_dense2')(x)
+    x = layers.Activation('relu', name='relu_dense2')(x)
+    x = layers.Dropout(0.3, name='dropout2')(x)
+    
+    # Output Layer
+    outputs = layers.Dense(num_classes, activation='softmax',
+                          kernel_initializer=kernel_initializer,
+                          name='output')(x)
+    
+    model = models.Model(inputs=inputs, outputs=outputs, name='ResNet_CNN')
     
     return model
 
@@ -57,18 +139,20 @@ def build_cnn_from_scratch(input_shape=(224, 224, 3), num_classes=10):
 def build_transfer_learning_model(base_model_name='MobileNetV2', 
                                    input_shape=(224, 224, 3), 
                                    num_classes=10,
-                                   freeze_base=True):
+                                   freeze_base=False,
+                                   fine_tune_layers=None):
     """
-    Build a model using transfer learning
+    Build optimized transfer learning model with fine-tuning capability
     
     Args:
         base_model_name: Name of base model ('MobileNetV2', 'ResNet50', 'EfficientNetB0')
         input_shape: Shape of input images
         num_classes: Number of fruit classes
-        freeze_base: Whether to freeze base model weights
+        freeze_base: Whether to freeze base model (False = fine-tuning)
+        fine_tune_layers: Number of layers to fine-tune (None = all if freeze_base=False)
         
     Returns:
-        Compiled Keras model
+        Compiled Keras model and preprocess function
     """
     # Load base model
     if base_model_name == 'MobileNetV2':
@@ -95,22 +179,36 @@ def build_transfer_learning_model(base_model_name='MobileNetV2',
     else:
         raise ValueError(f"Unknown base model: {base_model_name}")
     
-    # Freeze base model if specified
+    # Fine-tuning strategy
     if freeze_base:
         base_model.trainable = False
     else:
-        # Fine-tune last few layers
         base_model.trainable = True
-        for layer in base_model.layers[:-20]:
-            layer.trainable = False
+        if fine_tune_layers is not None:
+            # Fine-tune only last N layers
+            for layer in base_model.layers[:-fine_tune_layers]:
+                layer.trainable = False
+        # Use lower learning rate for base model (will be handled in training)
     
-    # Build complete model
+    # Build complete model with optimized classifier head
     model = models.Sequential([
         base_model,
         layers.GlobalAveragePooling2D(),
-        layers.Dense(128, activation='relu'),
+        layers.BatchNormalization(),
+        layers.Dense(256, 
+                    kernel_initializer='he_normal',
+                    kernel_regularizer=l2(1e-4)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
         layers.Dropout(0.5),
-        layers.Dense(num_classes, activation='softmax')
+        layers.Dense(128,
+                    kernel_initializer='he_normal',
+                    kernel_regularizer=l2(1e-4)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Dropout(0.4),
+        layers.Dense(num_classes, activation='softmax',
+                    kernel_initializer='he_normal')
     ])
     
     return model, preprocess_input
@@ -118,41 +216,27 @@ def build_transfer_learning_model(base_model_name='MobileNetV2',
 
 def compile_model(model, learning_rate=0.001):
     """
-    Compile model with optimizer and loss function
+    Compile model with Adam optimizer
     
     Args:
         model: Keras model
-        learning_rate: Learning rate for optimizer
+        learning_rate: Learning rate
         
     Returns:
         Compiled model
     """
+    optimizer = keras.optimizers.Adam(
+        learning_rate=learning_rate,
+        beta_1=0.9,
+        beta_2=0.999,
+        epsilon=1e-07
+    )
+    
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+        optimizer=optimizer,
         loss='categorical_crossentropy',
         metrics=['accuracy', 'top_k_categorical_accuracy']
     )
     
     return model
-
-
-def get_model_summary(model):
-    """Print and return model summary"""
-    model.summary()
-    return model
-
-
-if __name__ == "__main__":
-    # Test model creation
-    print("Testing CNN from scratch...")
-    model1 = build_cnn_from_scratch(num_classes=10)
-    model1 = compile_model(model1)
-    model1.summary()
-    
-    print("\n" + "="*50 + "\n")
-    
-    print("Testing Transfer Learning (MobileNetV2)...")
-    model2, _ = build_transfer_learning_model('MobileNetV2', num_classes=10)
-    model2 = compile_model(model2)
-    model2.summary()
 
