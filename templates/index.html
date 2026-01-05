@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍎 Fruit Recognition AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #065f46 0%, #047857 30%, #059669 60%, #047857 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 20px 40px;
+            background: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(4, 120, 87, 0.5);
+            min-width: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover:not(:disabled)::before {
+            left: 100%;
+        }
+        
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(4, 120, 87, 0.6);
+            background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
+        }
+        
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
+            box-shadow: 0 4px 15px rgba(4, 120, 87, 0.5);
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            box-shadow: 0 6px 25px rgba(4, 120, 87, 0.6);
+            background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+        }
+        
+        /* Modal/Popup Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideUpModal 0.3s;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        
+        @keyframes slideUpModal {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2em;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        
+        .close-modal:hover {
+            background: #f0f0f0;
+            color: #065f46;
+        }
+        
+        .upload-section {
+            border: 3px dashed #047857;
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            margin-bottom: 30px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(4, 120, 87, 0.15) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .upload-section:hover {
+            border-color: #065f46;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(4, 120, 87, 0.3);
+        }
+        
+        .upload-section.dragover {
+            border-color: #064e3b;
+            background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+            transform: scale(1.02);
+            box-shadow: 0 15px 40px rgba(4, 120, 87, 0.4);
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .upload-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .upload-subtext {
+            color: #666;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        /* Phone-style Camera UI */
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        #videoElement {
+            width: 100%;
+            display: block;
+            background: #000;
+        }
+        
+        .camera-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .capture-button {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 5px solid white;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .capture-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: white;
+        }
+        
+        .capture-button:active {
+            transform: scale(0.9);
+        }
+        
+        .camera-control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            font-size: 1.5em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        
+        .camera-control-btn:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        
+        .camera-control-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        canvas {
+            display: none;
+        }
+        
+        .preview-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .model-selector {
+            margin: 30px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border-radius: 15px;
+            border: 2px solid rgba(4, 120, 87, 0.1);
+        }
+        
+        .model-selector label {
+            display: block;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .model-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .model-option {
+            flex: 1;
+            min-width: 200px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            background: white;
+            position: relative;
+        }
+        
+        .model-option input[type="radio"] {
+            margin-right: 8px;
+            pointer-events: none;
+        }
+        
+        .model-option:hover:not(.unavailable) {
+            border-color: #047857;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(4, 120, 87, 0.3);
+        }
+        
+        .model-option.selected {
+            border-color: #065f46;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            box-shadow: 0 5px 20px rgba(4, 120, 87, 0.4);
+            border-width: 3px;
+        }
+        
+        .model-option.unavailable {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
+            border-radius: 20px;
+            display: none;
+            border: 2px solid rgba(4, 120, 87, 0.2);
+        }
+        
+        .results.show {
+            display: block;
+            animation: slideDown 0.5s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-title {
+            font-size: 2em;
+            color: #065f46;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(4, 120, 87, 0.2);
+        }
+        
+        .prediction-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .prediction-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .prediction-card.top {
+            border: 3px solid #065f46;
+            background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 50%, #d1fae5 100%);
+            box-shadow: 0 8px 30px rgba(4, 120, 87, 0.2);
+        }
+        
+        .prediction-class {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .prediction-class::before {
+            content: '🍎';
+            font-size: 1.2em;
+        }
+        
+        .prediction-card.top .prediction-class::before {
+            content: '🏆';
+        }
+        
+        .confidence-bar {
+            height: 35px;
+            background: #e0e0e0;
+            border-radius: 18px;
+            overflow: hidden;
+            margin-top: 15px;
+            position: relative;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #064e3b 0%, #065f46 30%, #047857 70%, #059669 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1em;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .confidence-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shine 2s infinite;
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #065f46;
+            border-right: 5px solid #047857;
+            border-bottom: 5px solid #059669;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: linear-gradient(135deg, #fee 0%, #fdd 100%);
+            color: #c33;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            display: none;
+            border: 2px solid #fcc;
+        }
+        
+        .error.show {
+            display: block;
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .class-list {
+            margin-top: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .class-list h3 {
+            color: #065f46;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            font-weight: 700;
+        }
+        
+        .class-list ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+        }
+        
+        .class-list li {
+            padding: 12px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 500;
+            border: 1px solid rgba(4, 120, 87, 0.15);
+            cursor: default;
+            color: #065f46;
+            user-select: none;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .model-options {
+                flex-direction: column;
+            }
+            
+            .camera-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍎 Fruit Recognition AI</h1>
+            <p>Powered by Deep Learning • Upload or Capture Live</p>
+        </div>
+        
+        <div class="content">
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn" id="uploadBtn">📤 Upload Image</button>
+                <button class="btn btn-secondary" id="cameraBtn">📷 Live Capture</button>
+            </div>
+            
+            <!-- Preview Section -->
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <img id="previewImage" class="preview-image" alt="Preview">
+            </div>
+            
+            <!-- Model Selector -->
+            <div class="model-selector">
+                <label>🤖 Select AI Model:</label>
+                <div class="model-options">
+                    <div class="model-option" id="transferOption">
+                        <input type="radio" name="model" value="transfer" checked>
+                        <strong>🚀 Transfer Learning</strong>
+                        <br><small>Higher accuracy (Recommended)</small>
+                    </div>
+                    <div class="model-option" id="cnnOption">
+                        <input type="radio" name="model" value="cnn">
+                        <strong>🧠 CNN from Scratch</strong>
+                        <br><small>Baseline model</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Predict Button -->
+            <button class="btn" id="predictBtn" style="width: 100%; font-size: 1.2em; padding: 18px;" disabled>
+                🔍 Predict Fruit
+            </button>
+            
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #065f46; font-size: 1.1em; font-weight: 600;">Analyzing image with AI...</p>
+            </div>
+            
+            <!-- Error -->
+            <div class="error" id="error"></div>
+            
+            <!-- Results -->
+            <div class="results" id="results">
+                <h2 class="result-title">🎯 Prediction Results</h2>
+                <div id="predictionsContainer"></div>
+            </div>
+            
+            <!-- Supported Fruits -->
+            <div class="class-list">
+                <h3>🍎 Supported Fruits</h3>
+                <ul id="classList">
+                    {% for class_name in class_names %}
+                    <li>{{ class_name }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <button class="close-modal" id="closeUploadModal">&times;</button>
+            <h2 style="margin-bottom: 20px; color: #065f46; font-weight: 700;">📤 Upload Image</h2>
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">Drag & Drop Your Fruit Image</div>
+                <div class="upload-subtext">or click to browse from your device</div>
+                <div class="file-input-wrapper">
+                    <input type="file" id="imageInput" class="file-input" accept="image/*">
+                    <label for="imageInput" class="btn">Choose Image</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Camera Modal -->
+    <div class="modal" id="cameraModal">
+        <div class="modal-content" style="max-width: 700px; padding: 0; background: #000;">
+            <button class="close-modal" id="closeCameraModal" style="color: white; background: rgba(255,255,255,0.2);">&times;</button>
+            <div class="camera-container">
+                <video id="videoElement" autoplay playsinline></video>
+                <div class="camera-controls">
+                    <button class="camera-control-btn" id="switchCameraBtn" title="Switch Camera" style="display: none;">🔄</button>
+                    <button class="capture-button" id="captureBtn"></button>
+                    <button class="camera-control-btn" id="stopCameraBtn">⏹</button>
+                </div>
+            </div>
+            <canvas id="canvasElement"></canvas>
+        </div>
+    </div>
+    
+    <!-- Model availability data (JSON to avoid linter errors) -->
+    <script type="application/json" id="modelAvailability">
+    {"cnnAvailable": {{ cnn_available|lower }}, "transferAvailable": {{ transfer_available|lower }}}
+    </script>
+    
+    <script>
+        // Model availability - Parse from JSON to avoid linter errors
+        const modelAvailability = JSON.parse(document.getElementById('modelAvailability').textContent);
+        const cnnAvailable = modelAvailability.cnnAvailable;
+        const transferAvailable = modelAvailability.transferAvailable;
+        
+        // Elements
+        const imageInput = document.getElementById('imageInput');
+        const previewSection = document.getElementById('previewSection');
+        const previewImage = document.getElementById('previewImage');
+        const predictBtn = document.getElementById('predictBtn');
+        const uploadSection = document.getElementById('uploadSection');
+        const results = document.getElementById('results');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const predictionsContainer = document.getElementById('predictionsContainer');
+        
+        // Modal elements
+        const uploadModal = document.getElementById('uploadModal');
+        const cameraModal = document.getElementById('cameraModal');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const closeUploadModal = document.getElementById('closeUploadModal');
+        const closeCameraModal = document.getElementById('closeCameraModal');
+        
+        // Camera elements
+        const videoElement = document.getElementById('videoElement');
+        const canvasElement = document.getElementById('canvasElement');
+        const captureBtn = document.getElementById('captureBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        let stream = null;
+        let currentImageFile = null;
+        
+        // Update model options based on availability
+        if (!transferAvailable) {
+            document.getElementById('transferOption').classList.add('unavailable');
+            document.querySelector('input[value="transfer"]').disabled = true;
+            document.querySelector('input[value="cnn"]').checked = true;
+        }
+        if (!cnnAvailable) {
+            document.getElementById('cnnOption').classList.add('unavailable');
+            document.querySelector('input[value="cnn"]').disabled = true;
+        }
+        
+        // Model selection - make entire container clickable
+        document.querySelectorAll('.model-option').forEach(option => {
+            option.addEventListener('click', function(e) {
+                // Don't trigger if clicking on unavailable option
+                if (this.classList.contains('unavailable')) {
+                    return;
+                }
+                
+                // Find the radio button inside this container
+                const radio = this.querySelector('input[type="radio"]');
+                if (radio && !radio.disabled) {
+                    // Select the radio button
+                    radio.checked = true;
+                    
+                    // Update visual selection
+                    document.querySelectorAll('.model-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    
+                    // Trigger change event for any other listeners
+                    radio.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+        
+        // Also handle direct radio button changes (for accessibility)
+        document.querySelectorAll('input[name="model"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.model-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                if (this.checked) {
+                    this.closest('.model-option').classList.add('selected');
+                }
+            });
+        });
+        
+        // Set initial selection
+        const initialChecked = document.querySelector('input[name="model"]:checked');
+        if (initialChecked) {
+            initialChecked.closest('.model-option').classList.add('selected');
+        }
+        
+        // Open upload modal
+        uploadBtn.addEventListener('click', function() {
+            uploadModal.classList.add('show');
+        });
+        
+        // Open camera modal
+        cameraBtn.addEventListener('click', function() {
+            cameraModal.classList.add('show');
+            startCamera();
+        });
+        
+        // Close modals
+        closeUploadModal.addEventListener('click', function() {
+            uploadModal.classList.remove('show');
+        });
+        
+        closeCameraModal.addEventListener('click', function() {
+            cameraModal.classList.remove('show');
+            stopCamera();
+        });
+        
+        // Close modal on outside click
+        uploadModal.addEventListener('click', function(e) {
+            if (e.target === uploadModal) {
+                uploadModal.classList.remove('show');
+            }
+        });
+        
+        cameraModal.addEventListener('click', function(e) {
+            if (e.target === cameraModal) {
+                cameraModal.classList.remove('show');
+                stopCamera();
+            }
+        });
+        
+        // File input handler
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleImageFile(file);
+                uploadModal.classList.remove('show');
+            }
+        });
+        
+        // Drag and drop
+        uploadSection.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', function() {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                imageInput.files = e.dataTransfer.files;
+                handleImageFile(file);
+                uploadModal.classList.remove('show');
+            }
+        });
+        
+        // Handle image file
+        function handleImageFile(file) {
+            currentImageFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewSection.style.display = 'block';
+                results.classList.remove('show');
+                error.classList.remove('show');
+                predictBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Start camera
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment', // Use back camera on mobile
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
+                videoElement.srcObject = stream;
+                captureBtn.disabled = false;
+                stopCameraBtn.disabled = false;
+                error.classList.remove('show');
+            } catch (err) {
+                showError('Camera access denied or not available: ' + err.message);
+            }
+        }
+        
+        // Capture photo
+        captureBtn.addEventListener('click', function() {
+            const context = canvasElement.getContext('2d');
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            context.drawImage(videoElement, 0, 0);
+            
+            canvasElement.toBlob(function(blob) {
+                const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+                handleImageFile(file);
+                currentImageFile = file;
+                
+                // Close camera modal
+                cameraModal.classList.remove('show');
+                stopCamera();
+            }, 'image/jpeg', 0.95);
+        });
+        
+        // Stop camera
+        stopCameraBtn.addEventListener('click', stopCamera);
+        
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                videoElement.srcObject = null;
+                captureBtn.disabled = true;
+                stopCameraBtn.disabled = true;
+            }
+        }
+        
+        // Predict button
+        predictBtn.addEventListener('click', function() {
+            const file = currentImageFile || imageInput.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('model_type', document.querySelector('input[name="model"]:checked').value);
+            
+            // Show loading
+            loading.classList.add('show');
+            results.classList.remove('show');
+            error.classList.remove('show');
+            predictBtn.disabled = true;
+            
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.remove('show');
+                predictBtn.disabled = false;
+                
+                if (data.success) {
+                    displayResults(data.prediction);
+                } else {
+                    showError(data.error || 'Prediction failed');
+                }
+            })
+            .catch(err => {
+                loading.classList.remove('show');
+                predictBtn.disabled = false;
+                showError('Error: ' + err.message);
+            });
+        });
+        
+        // Display results
+        function displayResults(prediction) {
+            predictionsContainer.innerHTML = '';
+            
+            const fruitEmojis = {
+                'Apple': '🍎', 'Avocado': '🥑', 'Banana': '🍌', 'Lemon': '🍋',
+                'Mango': '🥭', 'Orange': '🍊', 'Papaya': '🍈', 'Pineapple': '🍍',
+                'Tomato': '🍅', 'Watermelon': '🍉'
+            };
+            
+            prediction.top_3.forEach((pred, index) => {
+                const card = document.createElement('div');
+                card.className = 'prediction-card' + (index === 0 ? ' top' : '');
+                
+                const percentage = (pred.confidence * 100).toFixed(1);
+                const emoji = fruitEmojis[pred.class] || '🍎';
+                
+                card.innerHTML = `
+                    <div class="prediction-class">
+                        <span>${emoji}</span>
+                        <span>${pred.class}</span>
+                    </div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${percentage}%">
+                            ${percentage}%
+                        </div>
+                    </div>
+                `;
+                
+                predictionsContainer.appendChild(card);
+            });
+            
+            results.classList.add('show');
+            results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // Show error
+        function showError(message) {
+            error.textContent = '❌ ' + message;
+            error.classList.add('show');
+        }
+        
+        // Stop camera on page unload
+        window.addEventListener('beforeunload', stopCamera);
+    </script>
+</body>
+</html>
