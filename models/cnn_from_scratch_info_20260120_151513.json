@@ -1,0 +1,24 @@
+{
+  "model_type": "cnn_from_scratch",
+  "num_classes": 10,
+  "class_names": [
+    "Apple",
+    "Avocado",
+    "Banana",
+    "Lemon",
+    "Mango",
+    "Orange",
+    "Papaya",
+    "Pineapple",
+    "Tomato",
+    "Watermelon"
+  ],
+  "epochs": 70,
+  "batch_size": 32,
+  "img_size": [192, 192],
+  "initial_lr": 0.0002,
+  "test_accuracy": 0.8016666769981384,
+  "test_loss": 1.0400184392929077,
+  "best_val_accuracy": 0.8583333492279053,
+  "timestamp": "20260120_151513"
+}

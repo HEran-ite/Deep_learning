@@ -1,6 +1,6 @@
 """
-Training Script
-Main script to train the fruit recognition model
+Improved Training Script - Fixed for High Accuracy
+Fixes normalization, MixUp, and training pipeline issues
 """
 
 import os
@@ -10,252 +10,369 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import layers, regularizers
+import numpy as np
 
-from data_preprocessing import FruitDataset
-from model import build_cnn_from_scratch, build_transfer_learning_model, compile_model
+# Disable JIT for stability
+tf.config.optimizer.set_jit(False)
 
 
-def train_model(model_type='transfer', 
-                base_model='MobileNetV2',
-                data_dir='dataset',
-                epochs=30,
-                batch_size=32,
-                learning_rate=0.001,
-                img_size=(224, 224),
-                freeze_base=True,
-                save_dir='models',
-                fine_tune_layers=None):
-    """
-    Train the fruit recognition model
+def create_datasets(data_dir, img_size=(192, 192), batch_size=32, seed=42):
+    """Create datasets matching notebook exactly"""
+    train_dir = os.path.join(data_dir, "train")
+    val_dir = os.path.join(data_dir, "validation")
+    test_dir = os.path.join(data_dir, "test")
     
-    Args:
-        model_type: 'transfer' or 'scratch'
-        base_model: Base model name for transfer learning ('MobileNetV2', 'ResNet50', 'EfficientNetB0')
-        data_dir: Root directory of dataset
-        epochs: Number of training epochs
-        batch_size: Batch size
-        learning_rate: Learning rate
-        img_size: Image size (height, width)
-        freeze_base: Whether to freeze base model (for transfer learning)
-        save_dir: Directory to save model and results
-    """
+    # Get class names
+    class_names = sorted(
+        [d for d in os.listdir(train_dir) 
+         if os.path.isdir(os.path.join(train_dir, d)) and not d.startswith(".")],
+        key=str.lower
+    )
+    num_classes = len(class_names)
+    print(f"Found {num_classes} classes: {class_names}")
     
-    # Create save directory
-    os.makedirs(save_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # Include model type in filename for clarity
-    model_type_label = 'cnn' if model_type == 'scratch' else 'transfer'
-    base_model_label = f'_{base_model}' if model_type == 'transfer' else ''
-    model_save_path = os.path.join(save_dir, f'{model_type_label}{base_model_label}_model_{timestamp}')
-    
-    # Load dataset
-    print("Loading dataset...")
-    dataset = FruitDataset(data_dir, img_size=img_size, batch_size=batch_size)
-    
-    # Use moderate augmentation for CNN from scratch (stable, exam-safe)
-    augmentation_strength = 'aggressive' if model_type == 'scratch' else 'normal'
-    print(f"Using {augmentation_strength} data augmentation for {model_type} model")
-    
-    train_gen, val_gen, test_gen = dataset.create_data_generators(
-        use_augmentation=True,
-        augmentation_strength=augmentation_strength
+    # Build raw datasets
+    train_ds_raw = keras.utils.image_dataset_from_directory(
+        train_dir,
+        class_names=class_names,
+        image_size=img_size,
+        batch_size=batch_size,
+        label_mode="int",
+        shuffle=True,
+        seed=seed
     )
     
-    num_classes = len(dataset.class_names)
-    print(f"Number of classes: {num_classes}")
-    print(f"Class names: {dataset.class_names}")
+    val_ds_raw = keras.utils.image_dataset_from_directory(
+        val_dir,
+        class_names=class_names,
+        image_size=img_size,
+        batch_size=batch_size,
+        label_mode="int",
+        shuffle=False
+    )
     
-    # Build model with optimized configurations
-    print(f"\nBuilding {model_type} model...")
-    if model_type == 'transfer':
-        # For transfer learning, use fine-tuning for better performance
-        model, _ = build_transfer_learning_model(
-            base_model_name=base_model,
-            input_shape=(*img_size, 3),
-            num_classes=num_classes,
-            freeze_base=freeze_base,
-            fine_tune_layers=fine_tune_layers
-        )
-        # Use lower learning rate for transfer learning
-        initial_lr = learning_rate if freeze_base else learning_rate * 0.1
-    else:
-        # CNN from scratch - use optimized architecture
-        model = build_cnn_from_scratch(
-            input_shape=(*img_size, 3),
-            num_classes=num_classes
-        )
-        # Use lower learning rate for ResNet architecture
-        initial_lr = learning_rate * 0.5
+    test_ds_raw = keras.utils.image_dataset_from_directory(
+        test_dir,
+        class_names=class_names,
+        image_size=img_size,
+        batch_size=batch_size,
+        label_mode="int",
+        shuffle=False
+    )
     
-    # Compile model with stable settings for CNN from scratch
-    model = compile_model(model, learning_rate=initial_lr)
+    AUTOTUNE = tf.data.AUTOTUNE
     
-    # CRITICAL CHECK: Verify output layer matches number of classes
-    output_shape = model.output_shape
-    if output_shape[-1] != num_classes:
-        raise ValueError(f"CRITICAL ERROR: Model output size ({output_shape[-1]}) doesn't match number of classes ({num_classes})!")
-    print(f"✅ Model output size verified: {output_shape[-1]} classes")
+    # Convert to one-hot
+    def to_one_hot(images, labels):
+        images = tf.cast(images, tf.float32)
+        return images, tf.one_hot(labels, depth=num_classes)
     
-    # Print model summary
-    print("\nModel Architecture:")
+    # MixUp function
+    def sample_beta(alpha, shape):
+        g1 = tf.random.gamma(shape, alpha)
+        g2 = tf.random.gamma(shape, alpha)
+        return g1 / (g1 + g2)
+    
+    def mixup(batch_x, batch_y, alpha=0.2):
+        bs = tf.shape(batch_x)[0]
+        lam = sample_beta(alpha, [bs])
+        lam_x = tf.reshape(lam, [bs, 1, 1, 1])
+        lam_y = tf.reshape(lam, [bs, 1])
+        
+        idx = tf.random.shuffle(tf.range(bs))
+        x2 = tf.gather(batch_x, idx)
+        y2 = tf.gather(batch_y, idx)
+        
+        x = batch_x * lam_x + x2 * (1.0 - lam_x)
+        y = batch_y * lam_y + y2 * (1.0 - lam_y)
+        return x, y
+    
+    # Process training dataset with MixUp
+    train_ds = (
+        train_ds_raw
+        .unbatch()
+        .batch(batch_size, drop_remainder=True)
+        .shuffle(1000, seed=seed, reshuffle_each_iteration=True)
+        .map(to_one_hot, num_parallel_calls=AUTOTUNE)
+        .map(lambda x, y: mixup(x, y, alpha=0.2), num_parallel_calls=AUTOTUNE)
+        .prefetch(AUTOTUNE)
+    )
+    
+    # Process validation dataset (no MixUp)
+    val_ds = (
+        val_ds_raw
+        .map(to_one_hot, num_parallel_calls=AUTOTUNE)
+        .prefetch(AUTOTUNE)
+    )
+    
+    # Process test dataset (no MixUp)
+    test_ds = (
+        test_ds_raw
+        .map(to_one_hot, num_parallel_calls=AUTOTUNE)
+        .prefetch(AUTOTUNE)
+    )
+    
+    # Create and adapt normalization layer
+    norm = layers.Normalization()
+    norm.adapt(train_ds_raw.map(lambda x, y: tf.cast(x, tf.float32) / 255.0))
+    
+    return train_ds, val_ds, test_ds, norm, train_ds_raw, class_names, num_classes
+
+
+def build_model(input_shape, num_classes, norm_layer):
+    """
+    Build a slightly stronger CNN model from scratch aimed at ~80–85% test accuracy.
+    
+    Differences vs previous (notebook-style) CNN:
+    - Same input pipeline (MixUp, normalization, cosine LR)
+    - Increased capacity in later layers:
+      * Block 4 now has TWO conv layers with 256 filters
+      * Added Block 5 with 320 filters
+      * Dense layer increased from 256 → 384 units
+    - Regularization kept via L2 + Dropout to control overfitting
+    
+    This keeps the model purely from scratch (no pretraining) but gives it
+    more representational power for the 4k-image Kaggle dataset.
+    """
+    wd = 2e-4  # slightly stronger weight decay for the larger model
+    
+    # Data augmentation
+    data_augmentation = keras.Sequential([
+        layers.RandomFlip("horizontal"),
+        layers.RandomRotation(0.03),
+        layers.RandomZoom(0.08),
+        layers.RandomTranslation(0.03, 0.03),
+    ], name="augment")
+    
+    # Build model
+    inputs = layers.Input(shape=input_shape, name='input')
+    x = data_augmentation(inputs)
+    x = layers.Rescaling(1./255)(x)
+    x = norm_layer(x)
+    
+    # Block 1
+    x = layers.Conv2D(32, 3, padding="same", use_bias=False, 
+                      kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2D(32, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Block 2
+    x = layers.Conv2D(64, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2D(64, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Block 3
+    x = layers.Conv2D(128, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2D(128, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Block 4 (deeper: two convs with 256 filters)
+    x = layers.Conv2D(256, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2D(256, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Block 5 (new: 320 filters)
+    x = layers.Conv2D(320, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Classifier head
+    x = layers.GlobalAveragePooling2D()(x)
+    x = layers.Dropout(0.45)(x)
+    x = layers.Dense(384, activation="relu", kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.Dropout(0.45)(x)
+    outputs = layers.Dense(num_classes, activation="softmax")(x)
+    
+    model = keras.Model(inputs=inputs, outputs=outputs, name='Stronger_CNN')
+    return model
+
+
+def train_improved(data_dir='dataset',
+                  epochs=50,
+                  batch_size=32,
+                  img_size=(192, 192),
+                  save_dir='models',
+                  initial_lr=3e-4,
+                  seed=42):
+    """Train improved CNN from scratch model"""
+    
+    os.makedirs(save_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    model_save_path = os.path.join(save_dir, f'cnn_from_scratch_{timestamp}')
+    
+    print("Loading datasets...")
+    train_ds, val_ds, test_ds, norm_layer, train_ds_raw, class_names, num_classes = create_datasets(
+        data_dir, img_size=img_size, batch_size=batch_size, seed=seed
+    )
+    
+    print(f"\nBuilding model...")
+    model = build_model((*img_size, 3), num_classes, norm_layer)
+    
+    # Calculate steps for cosine decay
+    steps_per_epoch = tf.data.experimental.cardinality(train_ds_raw).numpy()
+    total_steps = steps_per_epoch * epochs
+    
+    # Cosine decay
+    lr_schedule = keras.optimizers.schedules.CosineDecay(
+        initial_learning_rate=initial_lr,
+        decay_steps=total_steps,
+        alpha=1e-2
+    )
+    
+    # Compile
+    optimizer = keras.optimizers.Adam(learning_rate=lr_schedule)
+    loss = keras.losses.CategoricalCrossentropy(label_smoothing=0.0)
+    
+    model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
+    
+    print("\nModel Summary:")
     model.summary()
     
-    # Optimized callbacks for better training
+    # Callbacks
+    # IMPORTANT: We already use a LearningRateSchedule (CosineDecay) for the optimizer.
+    # ReduceLROnPlateau tries to set optimizer.learning_rate directly, which is not allowed
+    # when a schedule object is used and causes a TypeError.
+    # Therefore, we ONLY use ModelCheckpoint + EarlyStopping + CSVLogger here.
     callbacks = [
         keras.callbacks.ModelCheckpoint(
             filepath=model_save_path + '_best.h5',
-            monitor='val_accuracy',
+            monitor="val_accuracy",
             save_best_only=True,
-            mode='max',
-            verbose=1,
-            save_weights_only=False
+            verbose=1
         ),
         keras.callbacks.EarlyStopping(
-            monitor='val_loss' if model_type == 'scratch' else 'val_accuracy',
-            patience=5 if model_type == 'scratch' else 10,
+            monitor="val_accuracy",
+            patience=10,
             restore_best_weights=True,
             verbose=1
         ),
-        keras.callbacks.ReduceLROnPlateau(
-            monitor='val_loss',
-            factor=0.3,  # More aggressive reduction
-            patience=3,  # Less patience
-            min_lr=1e-6,
-            verbose=1,
-            mode='min'
-        ),
         keras.callbacks.CSVLogger(
-            filename=os.path.join(save_dir, f'{model_type_label}{base_model_label}_training_log_{timestamp}.csv')
+            filename=os.path.join(save_dir, f'cnn_from_scratch_training_log_{timestamp}.csv')
         )
     ]
     
-    # No cosine annealing - use ReduceLROnPlateau only for stability
-    
-    # Calculate steps per epoch
-    steps_per_epoch = train_gen.samples // batch_size
-    validation_steps = val_gen.samples // batch_size
-    
-    # No class weights - keep it simple and stable
-    class_weights_dict = None
-    
-    # Train model
-    print("\nStarting training...")
+    print(f"\nStarting training...")
     print(f"Steps per epoch: {steps_per_epoch}")
-    print(f"Validation steps: {validation_steps}")
-    print(f"Initial learning rate: {initial_lr}")
+    print(f"Total steps: {total_steps}")
+    print(f"Initial LR: {initial_lr}")
     
     history = model.fit(
-        train_gen,
-        steps_per_epoch=steps_per_epoch,
+        train_ds,
         epochs=epochs,
-        validation_data=val_gen,
-        validation_steps=validation_steps,
+        validation_data=val_ds,
         callbacks=callbacks,
-        class_weight=class_weights_dict,
         verbose=1
     )
     
-    # Save final model
+    # Save
     model.save(model_save_path + '_final.h5')
-    print(f"\nModel saved to: {model_save_path}")
     
-    # Save training history
-    history_path = os.path.join(save_dir, f'{model_type_label}{base_model_label}_training_history_{timestamp}.json')
+    # Evaluate
+    print("\nEvaluating on test set...")
+    test_loss, test_acc = model.evaluate(test_ds, verbose=1)
+    print(f"Test accuracy: {test_acc:.4f}")
+    
+    # Save history
+    history_path = os.path.join(save_dir, f'cnn_from_scratch_history_{timestamp}.json')
     with open(history_path, 'w') as f:
         json.dump({k: [float(v) for v in values] for k, values in history.history.items()}, f)
     
-    # Plot training history
-    plot_training_history(history, save_dir, timestamp, model_type_label, base_model_label)
+    # Plot
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    epochs_range = range(len(history.history['accuracy']))
     
-    # Save model info
-    model_info = {
-        'model_type': model_type,
-        'base_model': base_model if model_type == 'transfer' else None,
-        'num_classes': num_classes,
-        'class_names': dataset.class_names,
-        'epochs': epochs,
-        'batch_size': batch_size,
-        'learning_rate': learning_rate,
-        'img_size': img_size,
-        'timestamp': timestamp
-    }
-    
-    info_path = os.path.join(save_dir, f'{model_type_label}{base_model_label}_model_info_{timestamp}.json')
-    with open(info_path, 'w') as f:
-        json.dump(model_info, f, indent=2)
-    
-    print("\nTraining completed!")
-    print(f"Best validation accuracy: {max(history.history['val_accuracy']):.4f}")
-    print(f"Final training accuracy: {history.history['accuracy'][-1]:.4f}")
-    
-    return model, history, dataset
-
-
-def plot_training_history(history, save_dir, timestamp, model_type_label='', base_model_label=''):
-    """Plot and save training history graphs"""
-    
-    fig, axes = plt.subplots(1, 2, figsize=(15, 5))
-    
-    # Accuracy plot
-    axes[0].plot(history.history['accuracy'], label='Training Accuracy', marker='o')
-    axes[0].plot(history.history['val_accuracy'], label='Validation Accuracy', marker='s')
+    axes[0].plot(epochs_range, history.history['accuracy'], label='Train', marker='o')
+    axes[0].plot(epochs_range, history.history['val_accuracy'], label='Val', marker='s')
     axes[0].set_xlabel('Epoch')
     axes[0].set_ylabel('Accuracy')
-    axes[0].set_title('Model Accuracy')
+    axes[0].set_title('Accuracy')
     axes[0].legend()
     axes[0].grid(True)
     
-    # Loss plot
-    axes[1].plot(history.history['loss'], label='Training Loss', marker='o')
-    axes[1].plot(history.history['val_loss'], label='Validation Loss', marker='s')
+    axes[1].plot(epochs_range, history.history['loss'], label='Train', marker='o')
+    axes[1].plot(epochs_range, history.history['val_loss'], label='Val', marker='s')
     axes[1].set_xlabel('Epoch')
     axes[1].set_ylabel('Loss')
-    axes[1].set_title('Model Loss')
+    axes[1].set_title('Loss')
     axes[1].legend()
     axes[1].grid(True)
     
     plt.tight_layout()
-    filename = f'{model_type_label}{base_model_label}_training_history_{timestamp}.png'
-    plt.savefig(os.path.join(save_dir, filename), dpi=300)
-    print(f"Training history plot saved to: {save_dir}/{filename}")
+    plt.savefig(os.path.join(save_dir, f'cnn_from_scratch_history_{timestamp}.png'), dpi=300)
     plt.close()
+    
+    # Save info
+    info = {
+        'model_type': 'cnn_from_scratch',
+        'num_classes': num_classes,
+        'class_names': class_names,
+        'epochs': epochs,
+        'batch_size': batch_size,
+        'img_size': img_size,
+        'initial_lr': initial_lr,
+        'test_accuracy': float(test_acc),
+        'test_loss': float(test_loss),
+        'best_val_accuracy': float(max(history.history['val_accuracy'])),
+        'timestamp': timestamp
+    }
+    
+    info_path = os.path.join(save_dir, f'cnn_from_scratch_info_{timestamp}.json')
+    with open(info_path, 'w') as f:
+        json.dump(info, f, indent=2)
+    
+    print(f"\n✅ Training completed!")
+    print(f"Best val accuracy: {max(history.history['val_accuracy']):.4f}")
+    print(f"Test accuracy: {test_acc:.4f}")
+    
+    return model, history
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Train Fruit Recognition Model')
-    parser.add_argument('--model_type', type=str, default='transfer',
-                       choices=['transfer', 'scratch'],
-                       help='Model type: transfer learning or from scratch')
-    parser.add_argument('--base_model', type=str, default='MobileNetV2',
-                       choices=['MobileNetV2', 'ResNet50', 'EfficientNetB0'],
-                       help='Base model for transfer learning')
-    parser.add_argument('--data_dir', type=str, default='dataset',
-                       help='Root directory of dataset')
-    parser.add_argument('--epochs', type=int, default=30,
-                       help='Number of training epochs')
-    parser.add_argument('--batch_size', type=int, default=32,
-                       help='Batch size')
-    parser.add_argument('--learning_rate', type=float, default=0.001,
-                       help='Learning rate')
-    parser.add_argument('--img_size', type=int, nargs=2, default=[224, 224],
-                       help='Image size (height width)')
-    parser.add_argument('--freeze_base', action='store_true',
-                       help='Freeze base model weights (for transfer learning)')
-    parser.add_argument('--save_dir', type=str, default='models',
-                       help='Directory to save model')
+    parser = argparse.ArgumentParser(description='Train CNN from Scratch (High Accuracy)')
+    parser.add_argument('--data_dir', type=str, default='dataset')
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--img_size', type=int, nargs=2, default=[192, 192])
+    parser.add_argument('--initial_lr', type=float, default=3e-4)
+    parser.add_argument('--save_dir', type=str, default='models')
+    parser.add_argument('--seed', type=int, default=42)
     
     args = parser.parse_args()
     
-    train_model(
-        model_type=args.model_type,
-        base_model=args.base_model,
+    train_improved(
         data_dir=args.data_dir,
         epochs=args.epochs,
         batch_size=args.batch_size,
-        learning_rate=args.learning_rate,
         img_size=tuple(args.img_size),
-        freeze_base=args.freeze_base,
-        save_dir=args.save_dir
+        save_dir=args.save_dir,
+        initial_lr=args.initial_lr,
+        seed=args.seed
     )
 
 

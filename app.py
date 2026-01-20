@@ -22,7 +22,7 @@ except ImportError:
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max file size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'heic', 'HEIC'}
 
 # Create uploads directory
@@ -34,18 +34,26 @@ cnn_model = None
 transfer_model = None
 class_names = None
 
+# Global variable to store model image size
+model_img_size = (192, 192)  # Default, will be updated from model info
+
 # Load class names from latest model info
 def load_class_names():
     """Load class names from model info JSON"""
-    global class_names
+    global class_names, model_img_size
     try:
-        # Find latest model info file
-        model_info_files = [f for f in os.listdir('models') if f.endswith('_model_info_.json')]
+        # Find latest model info file (cnn_from_scratch_info_*.json)
+        model_info_files = [f for f in os.listdir('models') if f.startswith('cnn_from_scratch_info_') and f.endswith('.json')]
         if model_info_files:
             latest = sorted(model_info_files)[-1]
             with open(os.path.join('models', latest), 'r') as f:
                 info = json.load(f)
                 class_names = info.get('class_names', [])
+                # Get image size from model info
+                img_size = info.get('img_size', [192, 192])
+                if isinstance(img_size, list) and len(img_size) == 2:
+                    model_img_size = tuple(img_size)
+                print(f"✅ Loaded model info: {len(class_names)} classes, image size: {model_img_size}")
                 return class_names
     except Exception as e:
         print(f"Error loading class names: {e}")
@@ -56,23 +64,26 @@ def load_class_names():
 
 def load_models():
     """Load the trained models"""
-    global cnn_model, transfer_model, class_names
+    global cnn_model, transfer_model, class_names, model_img_size
     
     class_names = load_class_names()
     
-    # Load CNN model
-    cnn_files = [f for f in os.listdir('models') if f.startswith('cnn_model_') and f.endswith('_best.h5')]
+    # Load CNN from scratch model (best model)
+    cnn_files = [f for f in os.listdir('models') if f.startswith('cnn_from_scratch_') and f.endswith('_best.h5')]
     if cnn_files:
         latest_cnn = sorted(cnn_files)[-1]
         cnn_path = os.path.join('models', latest_cnn)
         try:
             cnn_model = keras.models.load_model(cnn_path)
-            print(f"✅ Loaded CNN model: {latest_cnn}")
+            print(f"✅ Loaded CNN from scratch model: {latest_cnn}")
+            print(f"   Model image size: {model_img_size}")
         except Exception as e:
             print(f"❌ Error loading CNN model: {e}")
+    else:
+        print("⚠️  No CNN from scratch model found")
     
-    # Load Transfer Learning model
-    transfer_files = [f for f in os.listdir('models') if f.startswith('transfer_MobileNetV2_model_') and f.endswith('_best.h5')]
+    # Load Transfer Learning model (if available)
+    transfer_files = [f for f in os.listdir('models') if f.startswith('transfer_') and f.endswith('_best.h5')]
     if transfer_files:
         latest_transfer = sorted(transfer_files)[-1]
         transfer_path = os.path.join('models', latest_transfer)
@@ -81,6 +92,8 @@ def load_models():
             print(f"✅ Loaded Transfer Learning model: {latest_transfer}")
         except Exception as e:
             print(f"❌ Error loading Transfer Learning model: {e}")
+    else:
+        print("⚠️  No Transfer Learning model found")
 
 
 def allowed_file(filename):
@@ -88,9 +101,18 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
-def preprocess_image(image_path, img_size=(224, 224)):
-    """Preprocess image for model prediction"""
+def preprocess_image(image_path, img_size=None):
+    """Preprocess image for model prediction
+    
+    Note: The model includes Rescaling(1./255) and Normalization layers,
+    so we should pass images in [0, 255] range (not normalized).
+    """
+    global model_img_size
     try:
+        # Use model's image size if not specified
+        if img_size is None:
+            img_size = model_img_size
+        
         # Open image (supports HEIC)
         img = Image.open(image_path)
         
@@ -98,11 +120,16 @@ def preprocess_image(image_path, img_size=(224, 224)):
         if img.mode != 'RGB':
             img = img.convert('RGB')
         
-        # Resize
+        # Resize to model's expected size
         img = img.resize(img_size)
         
-        # Convert to array and normalize
-        img_array = np.array(img, dtype=np.float32) / 255.0
+        # Convert to array in [0, 255] range (uint8)
+        # The model's Rescaling layer will divide by 255
+        img_array = np.array(img, dtype=np.uint8)
+        
+        # Convert to float32 but keep values in [0, 255] range
+        # The model's Rescaling(1./255) layer will normalize it
+        img_array = img_array.astype(np.float32)
         
         # Add batch dimension
         img_array = np.expand_dims(img_array, axis=0)
@@ -110,15 +137,27 @@ def preprocess_image(image_path, img_size=(224, 224)):
         return img_array
     except Exception as e:
         print(f"Error preprocessing image: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
 def predict_fruit(model, image_array, model_type='cnn'):
     """Make prediction using the model"""
     try:
+        # Debug: Check input range
+        print(f"Debug: Input image min={image_array.min():.2f}, max={image_array.max():.2f}, mean={image_array.mean():.2f}")
+        
         predictions = model.predict(image_array, verbose=0)
+        
+        # Debug: Print raw predictions
+        print(f"Debug: Raw predictions: {predictions[0]}")
+        print(f"Debug: Prediction sum: {predictions[0].sum():.4f}")
+        
         predicted_class_idx = np.argmax(predictions[0])
         confidence = float(predictions[0][predicted_class_idx])
+        
+        print(f"Debug: Predicted class index: {predicted_class_idx}, Class: {class_names[predicted_class_idx] if predicted_class_idx < len(class_names) else 'Unknown'}, Confidence: {confidence:.4f}")
         
         # Get top 3 predictions
         top_3_indices = np.argsort(predictions[0])[-3:][::-1]
@@ -139,6 +178,8 @@ def predict_fruit(model, image_array, model_type='cnn'):
         }
     except Exception as e:
         print(f"Error making prediction: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -154,16 +195,19 @@ def index():
 @app.route('/predict', methods=['POST'])
 def predict():
     """Handle image upload and prediction"""
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image file provided'}), 400
-    
-    file = request.files['image']
-    model_type = request.form.get('model_type', 'transfer')
-    
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    if file and allowed_file(file.filename):
+    try:
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image file provided'}), 400
+        
+        file = request.files['image']
+        model_type = request.form.get('model_type', 'transfer')
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not file or not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid file type. Allowed: jpg, jpeg, png, heic'}), 400
+        
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
@@ -173,11 +217,14 @@ def predict():
         if image_array is None:
             return jsonify({'error': 'Error preprocessing image'}), 400
         
-        # Select model
-        model = transfer_model if model_type == 'transfer' else cnn_model
-        
-        if model is None:
-            return jsonify({'error': f'{model_type} model not available'}), 404
+        # Select model (default to CNN if transfer not available)
+        if model_type == 'transfer' and transfer_model is not None:
+            model = transfer_model
+        elif cnn_model is not None:
+            model = cnn_model
+            model_type = 'cnn'  # Override to use CNN if transfer not available
+        else:
+            return jsonify({'error': 'No model available'}), 404
         
         # Make prediction
         result = predict_fruit(model, image_array, model_type)
@@ -197,8 +244,13 @@ def predict():
             'prediction': result,
             'image_filename': filename
         })
-    
-    return jsonify({'error': 'Invalid file type'}), 400
+    except Exception as e:
+        # Ensure we always return JSON, not HTML
+        import traceback
+        error_msg = str(e)
+        if app.debug:
+            error_msg += '\n' + traceback.format_exc()
+        return jsonify({'error': f'Server error: {error_msg}'}), 500
 
 
 @app.route('/models_status')
@@ -210,6 +262,23 @@ def models_status():
         'class_names': class_names
     })
 
+
+# Error handlers to return JSON instead of HTML
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Endpoint not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({'error': 'Internal server error: ' + str(error)}), 500
+
+@app.errorhandler(400)
+def bad_request(error):
+    return jsonify({'error': 'Bad request: ' + str(error)}), 400
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify({'error': 'File too large. Please upload an image smaller than 32MB.'}), 413
 
 if __name__ == '__main__':
     print("Loading models...")
