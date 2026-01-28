@@ -1,3 +1,4 @@
+
 import os
 import argparse
 import json
@@ -10,6 +11,7 @@ import numpy as np
 
 # Disable JIT for stability
 tf.config.optimizer.set_jit(False)
+
 
 
 def create_datasets(data_dir, img_size=(192, 192), batch_size=32, seed=42):
@@ -26,6 +28,7 @@ def create_datasets(data_dir, img_size=(192, 192), batch_size=32, seed=42):
     )
     num_classes = len(class_names)
     print(f"Found {num_classes} classes: {class_names}")
+
     
     # Build raw datasets
     train_ds_raw = keras.utils.image_dataset_from_directory(
