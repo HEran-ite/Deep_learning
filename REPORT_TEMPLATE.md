@@ -1,17 +1,20 @@
 # Basket of Fruit Recognition Using Deep Learning
-
 ## Final Project Report
 
-**Course:** Deep Learning
-**Instructor:** [Instructor Name]
-**Team Members:** [Add Team Members]
+**Course:** [Your Course Name]  
+**Instructor:** [Instructor Name]  
+**Team Members:** [Team Member Names]  
 **Date:** [Submission Date]
 
 ---
 
 ## 1. Abstract
 
-Automatic fruit recognition is an important computer vision task with applications in agriculture, retail automation, and food quality assessment. This project focuses on classifying 10 different fruit types from images using a convolutional neural network (CNN) trained entirely from scratch. A custom dataset of approximately 4,000 images was collected, capturing variations in lighting, background, scale, and viewing angles. To improve generalization, advanced data augmentation techniques—including MixUp—were applied during training. The proposed CNN architecture consists of multiple convolutional blocks with batch normalization, max pooling, and dropout regularization, trained using the Adam optimizer with cosine decay learning rate scheduling. The model was evaluated using accuracy, precision, recall, F1-score, and confusion matrix analysis. Experimental results show that the model achieves a test accuracy of approximately 80%, with strong performance on visually distinct classes such as Watermelon and Avocado, while classes like Lemon and Mango remain more challenging. The results demonstrate that well-designed CNN architectures trained from scratch can achieve competitive performance on custom fruit datasets, even without transfer learning.
+[Write a brief summary (150-200 words) of your project, including:
+- Problem statement
+- Approach used
+- Key results
+- Main conclusions]
 
 ---
 
@@ -19,21 +22,33 @@ Automatic fruit recognition is an important computer vision task with applicatio
 
 ### 2.1 Problem Statement
 
-Fruit recognition plays a vital role in agricultural automation, food processing, and retail systems. Automatically identifying fruits from images can improve sorting efficiency, reduce human labor, and support intelligent inventory and checkout systems. However, automatic fruit classification is challenging due to high intra-class variation caused by differences in ripeness, lighting, size, and viewing angles. Additionally, some fruits share similar visual characteristics, making accurate classification difficult. These challenges motivate the use of deep learning methods capable of learning robust visual features directly from data.
+[Describe the problem you're solving:
+- Why fruit recognition is important
+- Challenges in automatic fruit classification
+- Real-world applications]
 
 ### 2.2 Objectives
 
-The primary objective of this project is to design and train a CNN model capable of recognizing 10 different fruit classes from images. Secondary objectives include achieving high classification accuracy, applying advanced data augmentation techniques, understanding CNN training from scratch, and performing a comprehensive evaluation of model performance.
+[List your project objectives:
+- Primary goal: Recognize 10 fruit types
+- Secondary goals: Achieve high accuracy, learn deep learning concepts, etc.]
 
 ### 2.3 Scope
 
-The scope of this project is limited to image-based classification of 10 fruit classes using a CNN trained from scratch. The system focuses on single-fruit images and does not address multi-object detection or video-based recognition.
+[Define the scope:
+- 10 fruit classes
+- Image-based classification
+- Deep learning approach]
 
 ---
 
 ## 3. Related Work
 
-Previous studies in fruit recognition initially relied on traditional machine learning methods using hand-crafted features such as color histograms and texture descriptors. With the success of deep learning, CNN-based approaches have become dominant in image classification tasks. Many recent works use transfer learning with pre-trained models such as VGG, ResNet, and MobileNet. While transfer learning often yields strong performance, fewer studies explore CNNs trained entirely from scratch on custom fruit datasets. Advanced data augmentation techniques such as MixUp, CutMix, and AutoAugment have also shown promise in improving generalization but remain underexplored in fruit classification contexts.
+[Brief literature review:
+- Previous work on fruit recognition
+- CNN applications in image classification
+- Transfer learning approaches
+- Cite 3-5 relevant papers/articles]
 
 ---
 
@@ -41,47 +56,221 @@ Previous studies in fruit recognition initially relied on traditional machine le
 
 ### 4.1 Data Collection Process
 
-Images were collected using smartphone cameras over a period of several weeks. Photos were taken in diverse locations including homes, local markets, and indoor environments. Each fruit class contains approximately 350–450 images, captured under varying lighting conditions and backgrounds.
+[Describe how you collected images:
+- Equipment used (phone cameras, etc.)
+- Locations (home, market, cafeteria)
+- Time period
+- Number of images per class]
 
 ### 4.2 Dataset Characteristics
 
-The dataset consists of approximately 4,000 RGB images across 10 fruit classes. Variations include different angles, lighting conditions, fruit sizes, and background clutter. Challenges encountered during collection included class imbalance and visually similar fruits.
+[Describe your dataset:
+- Total number of images
+- Images per class
+- Variations captured (lighting, angles, backgrounds)
+- Challenges faced during collection]
 
 ### 4.3 Dataset Split
 
-The dataset was divided into training (70%), validation (15%), and test (15%) sets. This split ensures sufficient data for training while allowing unbiased evaluation. Care was taken to avoid data leakage between splits.
+[Explain your train/validation/test split:
+- Ratio used (70/15/15)
+- Rationale for the split
+- Ensure no data leakage]
 
 ### 4.4 Dataset Statistics
 
-A balanced class distribution was maintained as much as possible. Class-wise image counts and visual samples are included in the results section of the project repository.
+[Include:
+- Table showing images per class
+- Visualizations (class distribution charts)
+- Sample images from each class]
 
 ---
-
-### 4.1 Data Collection Process
-
-Images were collected using smartphone cameras over a period of several weeks. Photos were taken in diverse locations including homes, local markets, and indoor environments. Each fruit class contains approximately 350–450 images, captured under varying lighting conditions and backgrounds.
 
 ## 5. Data Preprocessing
 
 ### 5.1 Image Preprocessing Steps
 
-All images were resized to 192×192 pixels. Pixel values were normalized to the range [0, 1], and a normalization layer was adapted on the training data.
+[Describe preprocessing:
+- Resizing (192x192)
+- Normalization (pixel values 0-1)
+- Any other transformations]
 
 ### 5.2 Data Augmentation
-To reduce overfitting and improve generalization, data augmentation techniques were applied, including random horizontal flipping, rotation, zoom, translation, and MixUp augmentation (α = 0.2). These techniques increase data diversity and help the model learn invariant features.
+
+[Explain augmentation techniques used:
+- Rotation
+- Horizontal flip
+- Zoom
+- Brightness adjustment
+- Why augmentation is important]
 
 ### 5.3 Implementation
 
-
-Preprocessing and augmentation were implemented using TensorFlow and Keras preprocessing layers within the training pipeline.
+[Briefly mention how preprocessing was implemented in code]
 
 ---
 
 ## 6. Model Architecture
+
 ### 6.1 Model Selection
 
-A CNN trained from scratch was chosen to better understand feature learning without relying on pre-trained weights. This approach allows the model to learn fruit-specific features directly from the dataset.
+[Explain why you chose:
+- CNN architecture
+- Transfer learning vs from scratch
+- Specific base models (if applicable)]
 
-### 6.2 Architecture Details (CNN from Scratch)
+### 6.2 Architecture Details
 
-The model consists of five convolutional blocks with increasing filter sizes (32, 64, 128, 256, 320), each followed by batch normalization, ReLU activation, and max pooling. A global average pooling layer and fully connected layers with dropout are used for classification.
+#### Option A: Transfer Learning Model
+
+[If using transfer learning, describe:
+- Base model (MobileNetV2/ResNet50/EfficientNet)
+- Which layers were frozen
+- Custom layers added
+- Total parameters]
+
+**Architecture Diagram:**
+```
+[Include a text or visual diagram of your model]
+```
+
+#### Option B: CNN from Scratch
+
+[If building from scratch, describe:
+- Number of convolutional layers
+- Pooling layers
+- Dense layers
+- Activation functions
+- Dropout layers]
+
+**Architecture Diagram:**
+```
+[Include a text or visual diagram of your model]
+```
+
+### 6.3 Hyperparameters
+
+[Table of hyperparameters:
+- Learning rate
+- Batch size
+- Number of epochs
+- Optimizer
+- Loss function
+- Regularization techniques]
+
+---
+
+## 7. Training & Evaluation
+
+### 7.1 Training Process
+
+[Describe:
+- Training environment (CPU/GPU)
+- Training time
+- Callbacks used (early stopping, model checkpoint, etc.)
+- Training curves (include graphs)]
+
+### 7.2 Evaluation Metrics
+
+[Explain metrics used:
+- Accuracy
+- Precision
+- Recall
+- F1-score
+- Confusion matrix]
+
+### 7.3 Results
+
+[Present your results:
+- Overall test accuracy
+- Per-class accuracy
+- Confusion matrix (include visualization)
+- Classification report]
+
+**Results Table:**
+| Class | Precision | Recall | F1-Score | Support |
+|-------|-----------|--------|----------|---------|
+| Banana | | | | |
+| Apple | | | | |
+| ... | | | | |
+
+### 7.4 Sample Predictions
+
+[Include:
+- Correct predictions with confidence scores
+- Misclassifications and analysis
+- Visual examples]
+
+---
+
+## 8. Challenges & Limitations
+
+### 8.1 Challenges Faced
+
+[Discuss:
+- Data collection challenges
+- Training difficulties
+- Computational constraints
+- Time limitations]
+
+### 8.2 Model Limitations
+
+[Address:
+- Classes that are harder to distinguish
+- Conditions where model fails
+- Dataset size limitations
+- Generalization issues]
+
+---
+
+## 9. Conclusion & Future Work
+
+### 9.1 Conclusion
+
+[Summarize:
+- What you achieved
+- Key learnings
+- Project success]
+
+### 9.2 Future Improvements
+
+[Suggest:
+- Collecting more data
+- Trying different architectures
+- Improving data augmentation
+- Deploying the model
+- Adding more fruit classes]
+
+---
+
+## 10. References
+
+[Cite all sources:
+- Papers
+- Documentation
+- Tutorials
+- Use proper citation format]
+
+Example:
+1. Krizhevsky, A., Sutskever, I., & Hinton, G. E. (2012). Imagenet classification with deep convolutional neural networks. NIPS.
+
+---
+
+## 11. Appendix
+
+### 11.1 Code Repository
+
+[Link to GitHub repository]
+
+### 11.2 Additional Visualizations
+
+[Any additional plots, graphs, or images]
+
+### 11.3 Team Contributions
+
+[Describe each team member's contributions]
+
+---
+
+**Note:** Replace all bracketed placeholders with your actual content. Include all required visualizations, tables, and results.
+
