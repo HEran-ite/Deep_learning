@@ -382,13 +382,13 @@ This project demonstrates:
 - Comprehensive evaluation metrics
 - Web application deployment
 
-## 📄 License
+## 👥 Group Members
+- Heran Eshetu
+- Iman Ibrahim
+- Ruhama Yohannes
+- Samrawit Kahsay
+- Yordanos Melake
 
-[Add your license information here]
-
-## 👥 Authors
-
-[Add your name/team members here]
 
 ## 🙏 Acknowledgments
 
