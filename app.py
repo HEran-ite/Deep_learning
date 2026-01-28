@@ -1,8 +1,3 @@
-"""
-Fruit Recognition Web Application
-Upload an image and get real-time fruit classification
-"""
-
 import os
 import numpy as np
 from flask import Flask, render_template, request, jsonify, send_from_directory
