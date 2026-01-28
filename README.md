@@ -387,7 +387,7 @@ This project demonstrates:
 - Iman Ibrahim
 - Ruhama Yohannes
 - Samrawit Kahsay
-- Yordanos Melake
+- Yordanos Melaku
 
 
 ##  Acknowledgments
