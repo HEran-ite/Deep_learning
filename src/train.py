@@ -252,7 +252,7 @@ def train_improved(data_dir='dataset',
     with open(info_path, 'w') as f:
         json.dump(info, f, indent=2)
     
-    print(f"\n✅ Training completed!")
+    print(f"\n Training completed!")
     print(f"Best val accuracy: {max(history.history['val_accuracy']):.4f}")
     print(f"Test accuracy: {test_acc:.4f}")
     
