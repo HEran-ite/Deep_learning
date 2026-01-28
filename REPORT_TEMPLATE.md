@@ -68,3 +68,12 @@ Images were collected using smartphone cameras over a period of several weeks. P
 All images were resized to 192×192 pixels. Pixel values were normalized to the range [0, 1], and a normalization layer was adapted on the training data.
 
 ### 5.2 Data Augmentation
+To reduce overfitting and improve generalization, data augmentation techniques were applied, including random horizontal flipping, rotation, zoom, translation, and MixUp augmentation (α = 0.2). These techniques increase data diversity and help the model learn invariant features.
+
+### 5.3 Implementation
+
+Preprocessing and augmentation were implemented using TensorFlow and Keras preprocessing layers within the training pipeline.
+
+---
+
+## 6. Model Architecture
