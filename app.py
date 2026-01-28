@@ -29,12 +29,15 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'heic', 'HEIC'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('static', exist_ok=True)
 
+from src.data_preprocessing import preprocess_image as unify_preprocess
+
 # Global variables for models (CNN only)
 cnn_model = None
 class_names = None
 
 # Global variable to store model image size
 model_img_size = (192, 192)  # Default, will be updated from model info
+
 
 # Load class names from latest model info
 def load_class_names():
@@ -90,44 +93,20 @@ def allowed_file(filename):
 
 
 def preprocess_image(image_path, img_size=None):
-    """Preprocess image for model prediction
-    
-    Note: The model includes Rescaling(1./255) and Normalization layers,
-    so we should pass images in [0, 255] range (not normalized).
-    """
+    """Preprocess image for model prediction using unified logic"""
     global model_img_size
-    try:
-        # Use model's image size if not specified
-        if img_size is None:
-            img_size = model_img_size
-        
-        # Open image (supports HEIC)
-        img = Image.open(image_path)
-        
-        # Convert to RGB if necessary
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        
-        # Resize to model's expected size
-        img = img.resize(img_size)
-        
-        # Convert to array in [0, 255] range (uint8)
-        # The model's Rescaling layer will divide by 255
-        img_array = np.array(img, dtype=np.uint8)
-        
-        # Convert to float32 but keep values in [0, 255] range
-        # The model's Rescaling(1./255) layer will normalize it
-        img_array = img_array.astype(np.float32)
-        
+    if img_size is None:
+        img_size = model_img_size
+    
+    # Use the unified preprocessing from src.data_preprocessing
+    # Note: rescale=False because the model has a Rescaling(1./255) layer
+    img_array = unify_preprocess(image_path, img_size=img_size, rescale=False)
+    
+    if img_array is not None:
         # Add batch dimension
         img_array = np.expand_dims(img_array, axis=0)
         
-        return img_array
-    except Exception as e:
-        print(f"Error preprocessing image: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+    return img_array
 
 
 def predict_fruit(model, image_array, model_type='cnn'):
