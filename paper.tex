@@ -1,196 +1,121 @@
-\documentclass[12pt,a4paper]{article}
-
-% Packages
+\documentclass{article}
 \usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amssymb}
 \usepackage{graphicx}
+\usepackage{amsmath}
 \usepackage{hyperref}
-\usepackage{cite}
-\usepackage{booktabs}
-\usepackage{multirow}
-\usepackage{array}
-\usepackage{float}
+\usepackage{authblk}
 \usepackage{geometry}
 \geometry{margin=1in}
 
-% Title information
-\title{Fruit Recognition Using Deep Learning: A CNN-from-Scratch Approach}
-\author{[Your Name/Team Members]}
-\date{\today}
+\title{Basket of Fruit Recognition Using Deep Learning}
+\author[1]{Heran E}
+\author[1]{Iman I}
+\author[1]{Ruhama Y}
+\author[1]{Samrawit K}
+\author[1]{Yordanos M}
+\affil[1]{School of Information Technology and Engineering, Addis Ababa University, Ethiopia}
+\date{January 2026}
 
 \begin{document}
 
 \maketitle
 
-% Abstract
 \begin{abstract}
-Automatic fruit recognition has emerged as an important application of computer vision with significant implications for agricultural automation, retail systems, and food quality assessment. This study addresses the challenge of accurately classifying 10 different fruit types from images using a convolutional neural network (CNN) trained entirely from scratch. Our methodology involves collecting a custom dataset of fruit images, implementing data augmentation techniques including MixUp, and designing a single, carefully tuned CNN architecture. We employ a CNN with multiple convolutional blocks, batch normalization, and dropout regularization, trained using cosine decay learning rate scheduling. The model is evaluated on a held-out test set using accuracy, precision, recall, and F1-score metrics. Our results demonstrate that the proposed CNN architecture achieves strong classification performance, effectively learning discriminative features for distinguishing between visually similar fruit classes. The findings contribute to the understanding of deep learning applications in agricultural image classification and provide insights into the trade-offs between model complexity and performance for small-scale datasets. This work has practical applications in automated fruit sorting systems, quality control in food processing, and educational tools for agricultural technology.
+Automated fruit recognition is an important task in computer vision with applications in agriculture (sorting and harvesting) and retail (smart checkout) systems. We present a custom 5-block convolutional neural network (CNN) trained \textbf{from scratch} to classify 10 fruit types. To handle real-world variability, we collected a dataset of several thousand images captured under diverse lighting, background, and angle conditions. The data pipeline includes standard preprocessing and extensive augmentation: random flips, rotations, zooms, translations, and MixUp. Training uses the Adam optimizer, a cosine-decayed learning rate, and strong regularization techniques. The model achieves a \textbf{peak validation accuracy of 85\%} and \textbf{test accuracy of 80.17\%}. These results show that a moderately deep CNN can effectively classify fruits without transfer learning, providing a strong baseline for deployment on resource-constrained systems.
 \end{abstract}
 
 \section{Introduction}
+Convolutional Neural Networks (CNNs) have become the dominant tool for image classification tasks in computer vision. Their ability to extract hierarchical representations directly from raw image data has significantly reduced the need for manual feature engineering. While models such as ResNet or MobileNet provide excellent performance due to pretraining on large-scale datasets like ImageNet, they are often too resource-intensive for real-world applications, especially in embedded or mobile settings where compute and memory are limited.
 
-\subsection{Background and Context}
+Fruit recognition serves as a practical testbed for evaluating CNN architectures because of its relevance to agricultural automation and retail systems. Despite seemingly distinct categories, this problem presents real challenges due to intra-class variability (e.g., ripeness and size) and inter-class similarity (e.g., lemons and oranges under similar lighting). To address this, our project explores the training of a custom CNN from scratch on a small, custom-collected dataset of fruit images.
 
-Image classification has become one of the most successful applications of deep learning, with convolutional neural networks (CNNs) achieving remarkable performance on various visual recognition tasks. The field of agricultural computer vision, in particular, has seen significant advances in recent years, with applications ranging from crop monitoring to automated harvesting systems. Fruit recognition represents a fundamental task within this domain, serving as a building block for more complex agricultural automation systems.
-
-The ability to automatically identify and classify fruits from images has numerous practical applications in modern agriculture and food industries. Automated fruit sorting systems can improve efficiency in processing facilities, reduce labor costs, and enhance quality control processes. Additionally, such systems can be integrated into retail environments for automated checkout systems, inventory management, and consumer applications that help identify fruits and provide nutritional information.
-
-Deep learning approaches, particularly CNNs, have revolutionized image classification tasks by automatically learning hierarchical feature representations from raw pixel data. Unlike traditional computer vision methods that rely on hand-crafted features, CNNs can discover complex patterns and relationships in images through end-to-end learning. This capability makes them particularly well-suited for fruit recognition, where visual features such as color, texture, shape, and size vary significantly across different fruit types and even within the same class.
-
-\subsection{Problem Statement}
-
-Despite the success of deep learning in image classification, fruit recognition presents unique challenges that distinguish it from general object recognition tasks. Fruits often exhibit high intra-class variability due to factors such as ripeness, size, lighting conditions, and viewing angles. Additionally, some fruit classes share similar visual characteristics, making them difficult to distinguish even for human observers. For instance, distinguishing between different varieties of apples or identifying fruits with similar shapes and colors requires learning subtle discriminative features.
-
-Existing fruit recognition systems often rely on large-scale datasets or pre-trained models that may not generalize well to custom datasets with specific characteristics. Many studies focus on either transfer learning from ImageNet pre-trained models or training simple architectures from scratch, but there is limited research comparing these approaches specifically for small-scale, custom-collected fruit datasets. Furthermore, the effectiveness of advanced data augmentation techniques such as MixUp for fruit classification remains underexplored.
-
-The gap in current research lies in understanding how to effectively train CNN models for fruit recognition when working with limited, custom-collected datasets. This includes determining the optimal balance between model complexity and generalization, selecting appropriate data augmentation strategies, and understanding the trade-offs between training from scratch versus leveraging transfer learning.
-
-\subsection{Motivation and Rationale}
-
-The motivation for this research stems from both practical and educational considerations. From a practical standpoint, developing accurate fruit recognition systems can contribute to agricultural automation, reducing the need for manual labor in sorting and quality assessment tasks. Such systems can operate consistently without fatigue and can be deployed in various environments, from farms to processing facilities to retail stores.
-
-From an educational perspective, fruit recognition provides an excellent case study for understanding deep learning principles. The problem is well-defined, the classes are visually distinct yet challenging enough to require sophisticated models, and the dataset can be collected with minimal resources. This makes it an ideal project for learning about CNN architectures, training procedures, and evaluation methodologies.
-
-The societal importance of this research extends beyond immediate applications. As the global population continues to grow, agricultural efficiency becomes increasingly critical. Automated systems that can accurately identify and assess produce can help reduce food waste, improve supply chain management, and ensure consistent quality standards. Additionally, consumer-facing applications can help individuals make informed choices about their food purchases.
-
-\subsection{Research Objectives and Questions}
-
-The primary objective of this study is to develop and evaluate deep learning models for accurate fruit classification from images. Specifically, we aim to:
-
-\begin{enumerate}
-    \item Design and implement a CNN architecture suitable for fruit recognition tasks
-    \item Train and optimize this CNN from scratch on a custom fruit dataset
-    \item Evaluate the impact of advanced data augmentation techniques, including MixUp, on model performance
-    \item Assess the model's ability to distinguish between 10 different fruit classes with varying visual similarities
-    \item Analyze the trade-offs between model complexity, training time, and classification accuracy
-\end{enumerate}
-
-To achieve these objectives, we address the following research questions:
-
-\begin{itemize}
-\item \textbf{RQ1:} What is an effective CNN architecture for fruit classification on a custom dataset when trained entirely from scratch?
-\item \textbf{RQ2:} What is the optimal architecture design for fruit recognition when working with limited training data?
-\item \textbf{RQ3:} How do different data augmentation strategies, particularly MixUp, affect model generalization and performance?
-\item \textbf{RQ4:} Which fruit classes are most challenging to distinguish, and what features contribute to misclassifications?
-\item \textbf{RQ5:} What are the computational requirements and training efficiency considerations for deploying fruit recognition systems?
-\end{itemize}
-
-\subsection{Brief Overview of Methodology}
-
-To address the research objectives, we employ a systematic approach combining data collection, model design, and comprehensive evaluation. We collect a custom dataset of 10 fruit classes, ensuring diversity in lighting conditions, backgrounds, and viewing angles. The dataset is split into training (70\%), validation (15\%), and test (15\%) sets to ensure robust evaluation.
-
-Our CNN architecture consists of multiple convolutional blocks with increasing filter depths (e.g., 32, 64, 128, 256 and beyond), each followed by batch normalization and max pooling. The model incorporates data augmentation layers for random flips, rotations, zooms, and translations. We implement MixUp augmentation during training to improve generalization. The network uses global average pooling followed by dense layers with dropout regularization to prevent overfitting.
-
-Training employs the Adam optimizer with cosine decay learning rate scheduling, starting at $3 \times 10^{-4}$ and decaying to $1 \times 10^{-2}$ of the initial rate. We use early stopping and model checkpointing to select the best model based on validation accuracy. The model is evaluated using standard classification metrics including accuracy, precision, recall, and F1-score, with detailed per-class analysis through confusion matrices.
-
-\subsection{Significance and Contributions}
-
-This research contributes to the field of agricultural computer vision and deep learning in several ways. First, we provide a comprehensive comparison of training strategies for fruit recognition, offering insights into when to use transfer learning versus training from scratch for custom datasets. Second, we demonstrate the effectiveness of advanced augmentation techniques like MixUp for small-scale fruit classification tasks.
-
-The practical contributions include a working fruit recognition system that can be deployed in real-world scenarios, along with a detailed analysis of model performance across different fruit classes. This analysis helps identify which classes are most challenging and provides guidance for future improvements.
-
-From a methodological perspective, we contribute a systematic approach to dataset collection, model design, and evaluation that can be adapted for other agricultural classification tasks. The codebase and methodology are designed to be reproducible and extensible, facilitating future research in this area.
-
-\subsection{Scope and Limitations}
-
-This study focuses on 10 specific fruit classes: Apple, Avocado, Banana, Lemon, Mango, Orange, Papaya, Pineapple, Tomato, and Watermelon. The scope is limited to single-fruit classification from static images, excluding scenarios involving multiple fruits in a single image or video-based recognition.
-
-The dataset is collected using standard smartphone cameras, which may introduce limitations in terms of image quality and consistency compared to professional imaging equipment. However, this approach reflects real-world deployment scenarios where cost-effective solutions are preferred.
-
-Computational constraints limit our exploration to moderate-sized CNN architectures. While larger models might achieve higher accuracy, we prioritize architectures that can be trained efficiently on consumer-grade hardware, making the research more accessible and practical.
-
-The study assumes that fruits are presented in a manner that allows for clear visibility of distinguishing features. Challenging scenarios such as occluded fruits, extreme lighting conditions, or heavily damaged produce are not explicitly addressed in this initial investigation.
-
-\subsection{Organization of the Paper}
-
-The remainder of this paper is organized as follows. Section 2 reviews related work in fruit recognition, deep learning for image classification, and data augmentation techniques. Section 3 describes the dataset collection methodology and characteristics. Section 4 details the data preprocessing and augmentation strategies. Section 5 presents the CNN architecture design and training methodology. Section 6 reports experimental results, including performance metrics and analysis. Section 7 discusses challenges, limitations, and future work. Finally, Section 8 concludes the paper with a summary of contributions and findings.
+This work demonstrates that with carefully chosen data augmentation strategies and regularization techniques, a moderate-capacity CNN can achieve competitive accuracy. In this paper, we detail the full pipeline from dataset collection to evaluation and offer insights into the limitations and strengths of training from scratch in a constrained setting.
 
 \section{Related Work}
+Early attempts at fruit classification relied on hand-crafted features such as color histograms, texture descriptors, and contour-based shape analysis, often in combination with traditional machine learning classifiers like SVMs or k-NN. These approaches, while effective in controlled environments, struggle in diverse real-world conditions with complex backgrounds and lighting variability.
 
-\subsection{Overview of Existing Research}
+The advent of deep learning, particularly with AlexNet~\cite{krizhevsky2012imagenet}, revolutionized image classification by introducing CNNs trained end-to-end on large datasets. In fruit recognition, many researchers have since adopted transfer learning, fine-tuning pretrained models such as VGG16, ResNet50, or MobileNet on fruit datasets. These methods significantly reduce training time and typically yield high accuracy, even on limited data.
 
-Fruit recognition has been an active area of research in computer vision and agricultural technology for several decades. Early approaches relied on traditional machine learning techniques combined with hand-crafted features such as color histograms, texture descriptors, and geometric features \cite{example1}. These methods, while interpretable, often struggled with the high variability inherent in natural fruit images and required extensive feature engineering.
+However, such approaches come with dependencies on large external datasets and pretraining infrastructure. In contrast, our approach aligns with research focusing on lightweight CNNs trained from scratch, particularly in low-resource settings. Additionally, Zhang et al.~\cite{zhang2017mixup} introduced MixUp, a regularization technique that interpolates between random sample pairs during training, which has been shown to improve model generalization. Our study builds on this work by applying MixUp in combination with geometric augmentations in a from-scratch training setup.
 
-The advent of deep learning, particularly CNNs, has revolutionized fruit recognition research. Krizhevsky et al. \cite{krizhevsky2012imagenet} demonstrated the power of deep CNNs for large-scale image classification, inspiring numerous applications in specialized domains. Since then, researchers have adapted these architectures for fruit and vegetable classification tasks, achieving significant improvements over traditional methods.
+\section{Problem Definition and Dataset}
+\subsection{Problem Statement}
+This work aims to develop a robust classifier capable of categorizing images of fruits into one of ten predefined classes: Apple, Avocado, Banana, Lemon, Mango, Orange, Papaya, Pineapple, Tomato, and Watermelon. The classifier operates on static RGB images, each containing a single fruit captured in a natural setting. The classification system is intended to function reliably across variations in lighting, camera angle, and fruit orientation.
 
-Recent studies have explored various CNN architectures for fruit recognition. Some researchers have focused on lightweight models suitable for mobile deployment, while others have investigated deeper architectures for maximum accuracy. Transfer learning from ImageNet pre-trained models has become a common approach, leveraging features learned from large-scale natural image datasets \cite{example2}.
+\subsection{Dataset Collection and Split}
+Our dataset was collected manually using smartphone cameras under diverse lighting and background conditions to emulate real-world scenarios such as homes and local markets. This diversity introduces natural challenges like shadows, occlusion, and clutter, making the classification task more realistic.
 
-Data augmentation has been recognized as crucial for improving model generalization, especially when working with limited datasets. Traditional augmentation techniques such as rotation, flipping, and color jittering have been widely adopted. More recently, advanced techniques like MixUp \cite{zhang2017mixup}, CutMix \cite{yun2019cutmix}, and AutoAugment \cite{cubuk2018autoaugment} have shown promise in improving model robustness.
+The dataset comprises approximately 4000 labeled images, evenly distributed across the ten fruit classes. We split the dataset into three subsets: 70\% for training to fit model parameters, 15\% for validation to monitor performance during training, and 15\% for final testing to assess generalization. Each subset maintains class balance to ensure fair evaluation, as shown in Figure \ref{fig:distribution}.
 
-\subsection{Comparison of Approaches}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{results/class_distribution.png}
+    \caption{Distribution of fruit classes in the training dataset.}
+    \label{fig:distribution}
+\end{figure}
 
-The literature reveals several distinct approaches to fruit recognition, each with its strengths and limitations. Transfer learning approaches typically use pre-trained models such as VGG, ResNet, or MobileNet as feature extractors, then fine-tune them on fruit-specific datasets. This strategy has shown strong performance, particularly when the target dataset is small, as it leverages features learned from millions of images \cite{example3}.
+\subsection{Preprocessing and Augmentation}
+All images are resized to 192x192 pixels to standardize input dimensions. Pixel intensities are scaled to the [0, 1] range and normalized using mean and standard deviation values computed from the training set. To improve model robustness, we apply several augmentation strategies during training:
 
-Training from scratch, while computationally more expensive, offers the advantage of learning features specifically tailored to the task at hand. This approach can be beneficial when the target domain differs significantly from ImageNet, or when computational resources allow for extensive training. However, it typically requires larger datasets to achieve comparable performance.
+We use random horizontal flips to simulate mirrored viewpoints, small-angle rotations (up to ±3°) to account for camera angle variation, and slight zoom and translation to mimic different distances and positions. Most importantly, we employ MixUp with a mixing parameter $\alpha=0.2$, which generates synthetic samples by linearly combining image-label pairs. This technique helps the model learn smoother decision boundaries and reduces overfitting.
 
-Hybrid approaches have also been explored, where researchers combine multiple models through ensemble methods or use different architectures for different fruit classes based on their visual characteristics. Some studies have incorporated domain-specific knowledge, such as using color spaces optimized for fruit detection or incorporating shape analysis alongside deep learning features.
+\section{Model and Training Methodology}
+\subsection{CNN Architecture}
+The CNN architecture used in this study consists of five sequential convolutional blocks designed to progressively extract higher-level features from the input images. Each of the first four blocks includes two convolutional layers followed by batch normalization and ReLU activation, with a max pooling layer to downsample spatial dimensions.
 
-Comparative studies have shown that the choice between transfer learning and training from scratch often depends on dataset size, computational resources, and specific application requirements. For small datasets (fewer than 1000 images per class), transfer learning generally outperforms training from scratch. However, as dataset size increases, the gap narrows, and training from scratch can sometimes achieve superior performance with sufficient data and computational resources.
+Specifically, Block 1 uses 32 filters, Block 2 uses 64, Block 3 uses 128, and Block 4 uses 256. The fifth block contains a single convolutional layer with 320 filters, followed by batch normalization and pooling. After the convolutional backbone, we apply Global Average Pooling to reduce the feature maps to a single vector, followed by Dropout (0.45) to mitigate overfitting. The final classifier includes a dense layer with 384 units and L2 regularization, culminating in a 10-unit softmax layer for multiclass output. The complete architecture is visualized in Figure \ref{fig:architecture}.
 
-\subsection{Identification of Gaps}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.6\textwidth]{results/cnn_architecture.png}
+    \caption{Proposed Stronger\_CNN architecture with 5 convolutional blocks.}
+    \label{fig:architecture}
+\end{figure}
 
-Despite the progress in fruit recognition research, several gaps remain in the current literature. First, most studies focus on either transfer learning or training from scratch, but few provide comprehensive comparisons on the same dataset with consistent evaluation protocols. This makes it difficult to draw definitive conclusions about which approach is superior for specific scenarios.
+\subsection{Training Details}
+The model is trained using the Adam optimizer, which combines the benefits of momentum and adaptive learning rates. We set the initial learning rate to $2\times10^{-4}$ and employ a cosine decay schedule to gradually reduce the learning rate over time, promoting stable convergence. Training is performed for up to 70 epochs with a batch size of 32. We apply early stopping with a patience of 10 epochs, monitoring validation accuracy to avoid overfitting.
 
-Second, while data augmentation is widely recognized as important, the effectiveness of advanced techniques like MixUp for fruit classification has not been thoroughly investigated. Most studies use standard augmentation techniques, and the optimal combination of augmentation strategies for fruit recognition remains unclear.
+The categorical crossentropy loss function is used to measure the discrepancy between predicted and true class distributions. Regularization strategies include dropout in the classifier head (rate 0.45), L2 weight decay on the dense layer ($2\times10^{-4}$), and MixUp augmentation during training.
 
-Third, there is limited research on understanding model failures and analyzing which fruit classes are most challenging to distinguish. Understanding these challenges can guide dataset collection efforts and model improvements. Additionally, most studies report overall accuracy but provide limited analysis of per-class performance and confusion patterns.
+\subsection{Implementation Environment}
+We implemented our training pipeline using TensorFlow 2.x and Keras. All experiments were conducted on an NVIDIA GPU for efficient computation. Data loading and preprocessing were performed using TensorFlow's `tf.data` API, which allows real-time augmentation and efficient batch preparation.
 
-Fourth, many studies use publicly available datasets that may not reflect real-world deployment scenarios. Research on custom-collected datasets with controlled variability (lighting, backgrounds, angles) is less common, yet such datasets may better represent practical applications.
+\section{Results and Discussion}
+\subsection{Evaluation Metrics}
+To evaluate our model, we report accuracy and crossentropy loss on both validation and test sets. The best performing model, as selected by highest validation accuracy, achieved 85.00\% accuracy on the validation set and 80.17\% on the unseen test set, with a final test loss of approximately 1.04. The training progression is shown in Figure \ref{fig:curves}.
 
-Finally, there is a gap in understanding the trade-offs between model complexity, training efficiency, and accuracy for fruit recognition. While deeper models often achieve higher accuracy, they may not be necessary or practical for all applications, especially those requiring real-time performance or deployment on resource-constrained devices.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{results/accuracy_loss_curves.png}
+    \caption{Training and validation accuracy and loss over 70 epochs.}
+    \label{fig:curves}
+\end{figure}
 
-\subsection{Relevance to Your Study}
+\subsection{Observations}
+These results indicate that the model has learned robust features from the training data and generalizes reasonably well to new samples. While accuracy is strong, certain class-level confusions persist. For instance, the model occasionally misclassifies green apples as avocados or lemons as oranges, likely due to color and shape similarity. Lighting artifacts and background clutter also affect predictions. The relatively small gap between validation and test performance suggests the model is not overfitting excessively. Detailed performance is shown in the confusion matrix (Figure \ref{fig:cm}) and qualitative examples are provided in Figure \ref{fig:examples}.
 
-This study addresses several of the identified gaps by providing a comprehensive comparison of training strategies on a custom-collected dataset. We investigate both transfer learning and training from scratch approaches, ensuring fair comparison through consistent evaluation protocols. Our focus on a custom dataset allows us to control for factors such as image quality, lighting conditions, and background variability, providing insights that may not be apparent when using heterogeneous public datasets.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{results/confusion_matrix.png}
+    \caption{Confusion matrix highlighting class-level performance on the test set.}
+    \label{fig:cm}
+\end{figure}
 
-The incorporation of MixUp augmentation addresses the gap in understanding advanced augmentation techniques for fruit recognition. By systematically evaluating the impact of MixUp alongside traditional augmentation, we contribute to the understanding of optimal data augmentation strategies for this domain.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1.0\textwidth]{results/prediction_examples.png}
+    \caption{Sample predictions from the test set with true vs. predicted labels.}
+    \label{fig:examples}
+\end{figure}
 
-Our detailed per-class analysis and confusion matrix examination directly address the gap in understanding model failures and challenging classes. This analysis provides actionable insights for improving both dataset collection and model design.
+Overall, our architecture combined with data augmentation and regularization strategies provides a solid baseline. The results demonstrate that even in the absence of transfer learning, effective fruit classification is possible with thoughtful design and tuning.
 
-The emphasis on moderate-sized architectures that can be trained efficiently addresses the gap in understanding computational trade-offs. By prioritizing architectures that balance accuracy and efficiency, we provide guidance for practical deployment scenarios.
+\section{Conclusion and Future Work}
+In this paper, we presented a complete deep learning pipeline for fruit image classification using a CNN trained from scratch. Our system achieves a test accuracy of over 80\%, confirming that moderate CNNs can perform well on small, diverse datasets. We have shown that techniques like MixUp, dropout, and learning rate scheduling significantly enhance performance.
 
-\subsection{Critical Analysis}
+For future work, we plan to compare our from-scratch model with pretrained networks such as EfficientNet and MobileNet to establish upper-bound accuracy. We also aim to compress and quantize the model for edge deployment, expand the dataset with more fruit classes, and explore transformer-based architectures that have recently shown strong performance in image classification.
 
-A critical analysis of the existing literature reveals both strengths and limitations in current approaches. The widespread adoption of transfer learning has been largely successful, but it may have led to over-reliance on pre-trained features that may not be optimal for fruit-specific characteristics. The assumption that ImageNet features transfer well to fruit recognition, while often valid, may not hold for all fruit classes, particularly those with unique visual properties.
-
-The focus on achieving high overall accuracy, while important, sometimes comes at the expense of understanding model behavior. Many studies report impressive accuracy scores but provide limited insight into failure cases, class-specific challenges, or the robustness of models to variations in imaging conditions.
-
-The diversity of evaluation protocols across studies makes it challenging to compare results meaningfully. Different train-test splits, augmentation strategies, and evaluation metrics can lead to significantly different reported performance, even on similar datasets. This highlights the need for standardized evaluation protocols in the field.
-
-From a practical perspective, many studies prioritize accuracy over deployment considerations such as inference speed, model size, and computational requirements. While high accuracy is important, real-world applications often require balancing multiple factors, and research that addresses these trade-offs is valuable.
-
-The field would benefit from more studies that combine multiple approaches—for example, using both transfer learning and training from scratch, or combining different augmentation techniques—and systematically evaluating their contributions. Additionally, research that focuses on understanding and improving performance on challenging classes, rather than just overall accuracy, would be particularly valuable.
-
-Our study aims to address these critical observations by providing a comprehensive, systematic investigation that balances accuracy, efficiency, and practical considerations, while offering detailed insights into model behavior and failure cases.
-
-\bibliographystyle{ieeetr}
-\begin{thebibliography}{99}
-
-\bibitem{krizhevsky2012imagenet}
-A. Krizhevsky, I. Sutskever, and G. E. Hinton, ``ImageNet classification with deep convolutional neural networks,'' in \textit{Advances in Neural Information Processing Systems}, vol. 25, 2012.
-
-\bibitem{zhang2017mixup}
-H. Zhang, M. Cisse, Y. N. Dauphin, and D. Lopez-Paz, ``Mixup: Beyond empirical risk minimization,'' \textit{arXiv preprint arXiv:1710.09412}, 2017.
-
-\bibitem{yun2019cutmix}
-S. Yun, D. Han, S. J. Oh, S. Chun, J. Choe, and Y. Yoo, ``CutMix: Regularization strategy to train strong classifiers with localizable features,'' in \textit{Proceedings of the IEEE/CVF International Conference on Computer Vision}, 2019, pp. 6023--6032.
-
-\bibitem{cubuk2018autoaugment}
-E. D. Cubuk, B. Zoph, D. Mane, V. Vasudevan, and Q. V. Le, ``AutoAugment: Learning augmentation strategies from data,'' in \textit{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition}, 2019, pp. 113--123.
-
-\bibitem{example1}
-[Add your reference here - Example: Early fruit recognition using traditional methods]
-
-\bibitem{example2}
-[Add your reference here - Example: Transfer learning for fruit classification]
-
-\bibitem{example3}
-[Add your reference here - Example: CNN architectures for agricultural applications]
-
-\end{thebibliography}
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}
-

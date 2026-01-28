@@ -46,50 +46,55 @@ Open `notebooks/data_exploration.ipynb` in Jupyter to visualize your dataset.
 
 ### 5. Train Your Model
 
-#### Option A: Transfer Learning (Recommended - Faster & Better Accuracy)
+The system is optimized for training a high-accuracy model from scratch using MixUp and Cosine Decay.
 
+#### **Easy Start (Recommended)**
+For Windows users:
+```powershell
+.\start_training.ps1
+```
+For Linux/Mac users:
 ```bash
-cd src
-python train.py \
-    --model_type transfer \
-    --base_model MobileNetV2 \
-    --data_dir ../dataset \
-    --epochs 30 \
-    --batch_size 32 \
-    --freeze_base
+./start_training.sh
 ```
 
-#### Option B: CNN from Scratch (Better for Learning)
-
+#### **Manual Execution**
 ```bash
-cd src
-python train.py \
-    --model_type scratch \
-    --data_dir ../dataset \
-    --epochs 30 \
-    --batch_size 32
+python src/train.py \
+    --data_dir dataset \
+    --epochs 50 \
+    --batch_size 32 \
+    --img_size 192 192 \
+    --initial_lr 3e-4 \
+    --save_dir models
 ```
 
 ### 6. Evaluate Your Model
 
-After training, find your best model in the `models/` directory and evaluate it:
+After training, find your best model in the `models/` directory and evaluate it using the evaluation script:
 
 ```bash
-cd src
-python evaluate.py \
-    --model_path ../models/fruit_model_YYYYMMDD_HHMMSS_best.h5 \
-    --data_dir ../dataset \
-    --save_dir ../results \
+python src/evaluate.py \
+    --model_path models/cnn_from_scratch_YYYYMMDD_HHMMSS_best.h5 \
+    --data_dir dataset \
+    --img_size 192 192 \
+    --save_dir results \
     --visualize
 ```
 
-### 7. Check Results
+### 7. Run the Web Application
 
-Results will be saved in `results/`:
-- `confusion_matrix.png` - Confusion matrix visualization
-- `per_class_accuracy.png` - Accuracy per fruit class
-- `sample_predictions.png` - Sample predictions with images
-- `evaluation_results.json` - Detailed metrics
+Launch the interactive interface to test your model:
+
+#### **Easy Start**
+For Windows: `.\start_web_app.ps1`
+For Linux/Mac: `./start_web_app.sh`
+
+#### **Manual Execution**
+```bash
+python app.py
+```
+Open `http://localhost:5000` in your browser.
 
 ### 8. Write Your Report
 
@@ -101,14 +106,14 @@ Use `REPORT_TEMPLATE.md` as a guide for your written report.
 
 **Out of Memory?**
 - Reduce batch_size: `--batch_size 16`
-- Reduce image size: `--img_size 128 128`
+- Reduce image size: `--img_size 160 160`
 
 **Low Accuracy?**
 - Collect more training data
-- Try different base models (ResNet50, EfficientNetB0)
-- Adjust learning rate: `--learning_rate 0.0001`
+- Ensure images are correctly organized in `dataset/`
+- Check training logs in `models/` or `logs/`
 
 **Need Help?**
-- Check the full README.md for detailed documentation
+- Check the full `README.md` for detailed documentation
 - Review the code comments in each script
 

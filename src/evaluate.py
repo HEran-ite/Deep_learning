@@ -33,7 +33,7 @@ def load_model(model_path):
     return model
 
 
-def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, save_dir='../results'):
+def evaluate_model(model_path, data_dir, img_size=(192, 192), batch_size=32, save_dir='../results'):
     """
     Evaluate model on test set
     
@@ -221,7 +221,7 @@ def visualize_predictions(model, test_gen, class_names, num_samples=16, save_dir
     plt.close()
 
 
-def predict_single_image(model_path, image_path, class_names, img_size=(224, 224)):
+def predict_single_image(model_path, image_path, class_names, img_size=(192, 192)):
     """
     Predict a single image
     
@@ -268,7 +268,7 @@ def main():
                        help='Path to saved model')
     parser.add_argument('--data_dir', type=str, default='../dataset',
                        help='Root directory of dataset')
-    parser.add_argument('--img_size', type=int, nargs=2, default=[224, 224],
+    parser.add_argument('--img_size', type=int, nargs=2, default=[192, 192],
                        help='Image size (height width)')
     parser.add_argument('--batch_size', type=int, default=32,
                        help='Batch size')
