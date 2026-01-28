@@ -42,3 +42,29 @@ Previous studies in fruit recognition initially relied on traditional machine le
 ### 4.1 Data Collection Process
 
 Images were collected using smartphone cameras over a period of several weeks. Photos were taken in diverse locations including homes, local markets, and indoor environments. Each fruit class contains approximately 350–450 images, captured under varying lighting conditions and backgrounds.
+
+### 4.2 Dataset Characteristics
+
+The dataset consists of approximately 4,000 RGB images across 10 fruit classes. Variations include different angles, lighting conditions, fruit sizes, and background clutter. Challenges encountered during collection included class imbalance and visually similar fruits.
+
+### 4.3 Dataset Split
+
+The dataset was divided into training (70%), validation (15%), and test (15%) sets. This split ensures sufficient data for training while allowing unbiased evaluation. Care was taken to avoid data leakage between splits.
+
+### 4.4 Dataset Statistics
+
+A balanced class distribution was maintained as much as possible. Class-wise image counts and visual samples are included in the results section of the project repository.
+
+---
+
+### 4.1 Data Collection Process
+
+Images were collected using smartphone cameras over a period of several weeks. Photos were taken in diverse locations including homes, local markets, and indoor environments. Each fruit class contains approximately 350–450 images, captured under varying lighting conditions and backgrounds.
+
+## 5. Data Preprocessing
+
+### 5.1 Image Preprocessing Steps
+
+All images were resized to 192×192 pixels. Pixel values were normalized to the range [0, 1], and a normalization layer was adapted on the training data.
+
+### 5.2 Data Augmentation
