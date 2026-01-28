@@ -199,39 +199,38 @@ class FruitDataset:
                   f"Val={len(val_images)}, Test={len(test_images)}")
 
 
-def preprocess_image(image_path, img_size=(224, 224)):
+def preprocess_image(image_path, img_size=(192, 192), rescale=False):
     """
     Preprocess a single image (supports HEIC format)
     
     Args:
         image_path: Path to image file
         img_size: Target size (height, width)
+        rescale: Whether to divide by 255 (Set to False if model has Rescaling layer)
         
     Returns:
-        Preprocessed image array
+        Preprocessed image array (numpy array)
     """
-    # Check if it's a HEIC file
-    is_heic = image_path.lower().endswith(('.heic', '.heif'))
-    
-    if is_heic and HEIC_SUPPORT:
-        # Use PIL for HEIC files
+    # Open image (supports HEIC)
+    try:
         img = Image.open(image_path)
+        
         # Convert to RGB if necessary
         if img.mode != 'RGB':
             img = img.convert('RGB')
-        img = np.array(img)
-    else:
-        # Use OpenCV for other formats
-        img = cv2.imread(image_path)
-        if img is None:
-            raise ValueError(f"Could not read image: {image_path}")
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    
-    # Resize
-    img = cv2.resize(img, img_size)
-    
-    # Normalize
-    img = img.astype(np.float32) / 255.0
-    
-    return img
+        
+        # Resize to model's expected size
+        img = img.resize(img_size)
+        
+        # Convert to array
+        img_array = np.array(img, dtype=np.float32)
+        
+        # Rescale if requested
+        if rescale:
+            img_array /= 255.0
+            
+        return img_array
+    except Exception as e:
+        print(f"Error preprocessing image {image_path}: {e}")
+        return None
 
