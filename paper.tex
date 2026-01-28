@@ -17,7 +17,7 @@
 \geometry{margin=1in}
 
 % Title information
-\title{Fruit Recognition Using Deep Learning: A Comparative Study of CNN Architectures}
+\title{Fruit Recognition Using Deep Learning: A CNN-from-Scratch Approach}
 \author{[Your Name/Team Members]}
 \date{\today}
 
@@ -27,7 +27,7 @@
 
 % Abstract
 \begin{abstract}
-Automatic fruit recognition has emerged as an important application of computer vision with significant implications for agricultural automation, retail systems, and food quality assessment. This study addresses the challenge of accurately classifying 10 different fruit types from images using deep learning techniques. We investigate the effectiveness of convolutional neural networks (CNNs) trained from scratch versus transfer learning approaches for fruit classification. Our methodology involves collecting a custom dataset of fruit images, implementing data augmentation techniques including MixUp, and training multiple CNN architectures. We employ a CNN architecture with four convolutional blocks, batch normalization, and dropout regularization, trained using cosine decay learning rate scheduling. The model is evaluated on a held-out test set using accuracy, precision, recall, and F1-score metrics. Our results demonstrate that the proposed CNN architecture achieves competitive classification performance, with the model effectively learning discriminative features for distinguishing between similar fruit classes. The findings contribute to the understanding of deep learning applications in agricultural image classification and provide insights into the trade-offs between model complexity and performance for small-scale datasets. This work has practical applications in automated fruit sorting systems, quality control in food processing, and educational tools for agricultural technology.
+Automatic fruit recognition has emerged as an important application of computer vision with significant implications for agricultural automation, retail systems, and food quality assessment. This study addresses the challenge of accurately classifying 10 different fruit types from images using a convolutional neural network (CNN) trained entirely from scratch. Our methodology involves collecting a custom dataset of fruit images, implementing data augmentation techniques including MixUp, and designing a single, carefully tuned CNN architecture. We employ a CNN with multiple convolutional blocks, batch normalization, and dropout regularization, trained using cosine decay learning rate scheduling. The model is evaluated on a held-out test set using accuracy, precision, recall, and F1-score metrics. Our results demonstrate that the proposed CNN architecture achieves strong classification performance, effectively learning discriminative features for distinguishing between visually similar fruit classes. The findings contribute to the understanding of deep learning applications in agricultural image classification and provide insights into the trade-offs between model complexity and performance for small-scale datasets. This work has practical applications in automated fruit sorting systems, quality control in food processing, and educational tools for agricultural technology.
 \end{abstract}
 
 \section{Introduction}
@@ -62,7 +62,7 @@ The primary objective of this study is to develop and evaluate deep learning mod
 
 \begin{enumerate}
     \item Design and implement a CNN architecture suitable for fruit recognition tasks
-    \item Investigate the effectiveness of training from scratch versus transfer learning approaches
+    \item Train and optimize this CNN from scratch on a custom fruit dataset
     \item Evaluate the impact of advanced data augmentation techniques, including MixUp, on model performance
     \item Assess the model's ability to distinguish between 10 different fruit classes with varying visual similarities
     \item Analyze the trade-offs between model complexity, training time, and classification accuracy
@@ -71,18 +71,18 @@ The primary objective of this study is to develop and evaluate deep learning mod
 To achieve these objectives, we address the following research questions:
 
 \begin{itemize}
-    \item \textbf{RQ1:} How does a CNN trained from scratch perform compared to transfer learning approaches for fruit classification on a custom dataset?
-    \item \textbf{RQ2:} What is the optimal architecture design for fruit recognition when working with limited training data?
-    \item \textbf{RQ3:} How do different data augmentation strategies, particularly MixUp, affect model generalization and performance?
-    \item \textbf{RQ4:} Which fruit classes are most challenging to distinguish, and what features contribute to misclassifications?
-    \item \textbf{RQ5:} What are the computational requirements and training efficiency considerations for deploying fruit recognition systems?
+\item \textbf{RQ1:} What is an effective CNN architecture for fruit classification on a custom dataset when trained entirely from scratch?
+\item \textbf{RQ2:} What is the optimal architecture design for fruit recognition when working with limited training data?
+\item \textbf{RQ3:} How do different data augmentation strategies, particularly MixUp, affect model generalization and performance?
+\item \textbf{RQ4:} Which fruit classes are most challenging to distinguish, and what features contribute to misclassifications?
+\item \textbf{RQ5:} What are the computational requirements and training efficiency considerations for deploying fruit recognition systems?
 \end{itemize}
 
 \subsection{Brief Overview of Methodology}
 
 To address the research objectives, we employ a systematic approach combining data collection, model design, and comprehensive evaluation. We collect a custom dataset of 10 fruit classes, ensuring diversity in lighting conditions, backgrounds, and viewing angles. The dataset is split into training (70\%), validation (15\%), and test (15\%) sets to ensure robust evaluation.
 
-Our CNN architecture consists of four convolutional blocks with increasing filter depths (32, 64, 128, 256), each followed by batch normalization and max pooling. The model incorporates data augmentation layers for random flips, rotations, zooms, and translations. We implement MixUp augmentation during training to improve generalization. The network uses global average pooling followed by dense layers with dropout regularization to prevent overfitting.
+Our CNN architecture consists of multiple convolutional blocks with increasing filter depths (e.g., 32, 64, 128, 256 and beyond), each followed by batch normalization and max pooling. The model incorporates data augmentation layers for random flips, rotations, zooms, and translations. We implement MixUp augmentation during training to improve generalization. The network uses global average pooling followed by dense layers with dropout regularization to prevent overfitting.
 
 Training employs the Adam optimizer with cosine decay learning rate scheduling, starting at $3 \times 10^{-4}$ and decaying to $1 \times 10^{-2}$ of the initial rate. We use early stopping and model checkpointing to select the best model based on validation accuracy. The model is evaluated using standard classification metrics including accuracy, precision, recall, and F1-score, with detailed per-class analysis through confusion matrices.
 

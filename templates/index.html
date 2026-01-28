@@ -707,19 +707,13 @@
                 <img id="previewImage" class="preview-image" alt="Preview">
             </div>
             
-            <!-- Model Selector -->
+            <!-- Model Info (CNN only) -->
             <div class="model-selector">
-                <label>🤖 Select AI Model:</label>
+                <label>🤖 AI Model:</label>
                 <div class="model-options">
-                    <div class="model-option" id="transferOption">
-                        <input type="radio" name="model" value="transfer">
-                        <strong>🚀 Transfer Learning</strong>
-                        <br><small>Higher accuracy (Recommended)</small>
-                    </div>
-                    <div class="model-option" id="cnnOption">
-                        <input type="radio" name="model" value="cnn" checked>
+                    <div class="model-option selected" id="cnnOption" style="cursor: default;">
                         <strong>🧠 CNN from Scratch</strong>
-                        <br><small>80% accuracy - Best model</small>
+                        <br><small>Final deployed model (trained from scratch with MixUp)</small>
                     </div>
                 </div>
             </div>
@@ -789,16 +783,9 @@
         </div>
     </div>
     
-    <!-- Model availability data (JSON to avoid linter errors) -->
-    <script type="application/json" id="modelAvailability">
-    {"cnnAvailable": {{ cnn_available|lower }}, "transferAvailable": {{ transfer_available|lower }}}
-    </script>
-    
     <script>
-        // Model availability - Parse from JSON to avoid linter errors
-        const modelAvailability = JSON.parse(document.getElementById('modelAvailability').textContent);
-        const cnnAvailable = modelAvailability.cnnAvailable;
-        const transferAvailable = modelAvailability.transferAvailable;
+        // Model availability (CNN only)
+        const cnnAvailable = {{ cnn_available|lower }};
         
         // Elements
         const imageInput = document.getElementById('imageInput');
@@ -827,59 +814,8 @@
         let stream = null;
         let currentImageFile = null;
         
-        // Update model options based on availability
-        if (!transferAvailable) {
-            document.getElementById('transferOption').classList.add('unavailable');
-            document.querySelector('input[value="transfer"]').disabled = true;
-            document.querySelector('input[value="cnn"]').checked = true;
-        }
         if (!cnnAvailable) {
             document.getElementById('cnnOption').classList.add('unavailable');
-            document.querySelector('input[value="cnn"]').disabled = true;
-        }
-        
-        // Model selection - make entire container clickable
-        document.querySelectorAll('.model-option').forEach(option => {
-            option.addEventListener('click', function(e) {
-                // Don't trigger if clicking on unavailable option
-                if (this.classList.contains('unavailable')) {
-                    return;
-                }
-                
-                // Find the radio button inside this container
-                const radio = this.querySelector('input[type="radio"]');
-                if (radio && !radio.disabled) {
-                    // Select the radio button
-                    radio.checked = true;
-                    
-                    // Update visual selection
-                    document.querySelectorAll('.model-option').forEach(opt => {
-                        opt.classList.remove('selected');
-                    });
-                    this.classList.add('selected');
-                    
-                    // Trigger change event for any other listeners
-                    radio.dispatchEvent(new Event('change'));
-                }
-            });
-        });
-        
-        // Also handle direct radio button changes (for accessibility)
-        document.querySelectorAll('input[name="model"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                document.querySelectorAll('.model-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                if (this.checked) {
-                    this.closest('.model-option').classList.add('selected');
-                }
-            });
-        });
-        
-        // Set initial selection
-        const initialChecked = document.querySelector('input[name="model"]:checked');
-        if (initialChecked) {
-            initialChecked.closest('.model-option').classList.add('selected');
         }
         
         // Open upload modal
@@ -1018,7 +954,8 @@
             
             const formData = new FormData();
             formData.append('image', file);
-            formData.append('model_type', document.querySelector('input[name="model"]:checked').value);
+            // Backend uses CNN only; model_type kept for compatibility
+            formData.append('model_type', 'cnn');
             
             // Show loading
             loading.classList.add('show');

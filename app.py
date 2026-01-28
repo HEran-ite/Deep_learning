@@ -29,9 +29,8 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'heic', 'HEIC'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('static', exist_ok=True)
 
-# Global variables for models
+# Global variables for models (CNN only)
 cnn_model = None
-transfer_model = None
 class_names = None
 
 # Global variable to store model image size
@@ -63,8 +62,8 @@ def load_class_names():
 
 
 def load_models():
-    """Load the trained models"""
-    global cnn_model, transfer_model, class_names, model_img_size
+    """Load the trained CNN model"""
+    global cnn_model, class_names, model_img_size
     
     class_names = load_class_names()
     
@@ -82,18 +81,7 @@ def load_models():
     else:
         print("⚠️  No CNN from scratch model found")
     
-    # Load Transfer Learning model (if available)
-    transfer_files = [f for f in os.listdir('models') if f.startswith('transfer_') and f.endswith('_best.h5')]
-    if transfer_files:
-        latest_transfer = sorted(transfer_files)[-1]
-        transfer_path = os.path.join('models', latest_transfer)
-        try:
-            transfer_model = keras.models.load_model(transfer_path)
-            print(f"✅ Loaded Transfer Learning model: {latest_transfer}")
-        except Exception as e:
-            print(f"❌ Error loading Transfer Learning model: {e}")
-    else:
-        print("⚠️  No Transfer Learning model found")
+    # No transfer learning models are used in this version (CNN-only)
 
 
 def allowed_file(filename):
@@ -188,7 +176,7 @@ def index():
     """Main page"""
     return render_template('index.html', 
                          cnn_available=cnn_model is not None,
-                         transfer_available=transfer_model is not None,
+                         transfer_available=False,
                          class_names=class_names)
 
 
@@ -200,7 +188,6 @@ def predict():
             return jsonify({'error': 'No image file provided'}), 400
         
         file = request.files['image']
-        model_type = request.form.get('model_type', 'transfer')
         
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
@@ -217,17 +204,13 @@ def predict():
         if image_array is None:
             return jsonify({'error': 'Error preprocessing image'}), 400
         
-        # Select model (default to CNN if transfer not available)
-        if model_type == 'transfer' and transfer_model is not None:
-            model = transfer_model
-        elif cnn_model is not None:
-            model = cnn_model
-            model_type = 'cnn'  # Override to use CNN if transfer not available
-        else:
+        # Select model (CNN only)
+        if cnn_model is None:
             return jsonify({'error': 'No model available'}), 404
+        model = cnn_model
         
         # Make prediction
-        result = predict_fruit(model, image_array, model_type)
+        result = predict_fruit(model, image_array, model_type='cnn')
         
         if result is None:
             return jsonify({'error': 'Error making prediction'}), 500
@@ -240,7 +223,7 @@ def predict():
         
         return jsonify({
             'success': True,
-            'model_type': model_type,
+            'model_type': 'cnn',
             'prediction': result,
             'image_filename': filename
         })
@@ -258,7 +241,7 @@ def models_status():
     """Get status of available models"""
     return jsonify({
         'cnn_available': cnn_model is not None,
-        'transfer_available': transfer_model is not None,
+        'transfer_available': False,
         'class_names': class_names
     })
 

@@ -50,14 +50,36 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
     model = load_model(model_path)
     
     # Load dataset
-    dataset = FruitDataset(data_dir, img_size=img_size, batch_size=batch_size)
-    _, _, test_gen = dataset.create_data_generators(use_augmentation=False)
+    # Note: We need to use img_size that matches the model
+    # The model has Rescaling(1./255) built in, so ImageDataGenerator should NOT rescale
+    # We'll create a custom generator without rescaling
+    from tensorflow.keras.preprocessing.image import ImageDataGenerator
     
+    test_dir = os.path.join(data_dir, 'test')
+    dataset = FruitDataset(data_dir, img_size=img_size, batch_size=batch_size)
     class_names = dataset.class_names
-    num_classes = len(class_names)
+    
+    # Create test generator WITHOUT rescaling (model has Rescaling layer built in)
+    test_datagen = ImageDataGenerator()  # No rescale - model handles it
+    test_gen = test_datagen.flow_from_directory(
+        test_dir,
+        target_size=img_size,
+        batch_size=batch_size,
+        class_mode='categorical',
+        classes=class_names,
+        shuffle=False
+    )
+    
+    # Get class names in the order used by the generator
+    # The generator's class_indices maps class names to indices
+    generator_class_indices = test_gen.class_indices
+    # Create sorted list of class names by their index
+    sorted_class_names = sorted(generator_class_indices.keys(), key=lambda x: generator_class_indices[x])
+    num_classes = len(sorted_class_names)
     
     print(f"\nEvaluating on test set...")
     print(f"Number of test samples: {test_gen.samples}")
+    print(f"Class names (in generator order): {sorted_class_names}")
     
     # Get predictions
     test_steps = test_gen.samples // batch_size
@@ -77,7 +99,7 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
         true_classes,
         predicted_classes,
         labels=labels,
-        target_names=class_names,
+        target_names=sorted_class_names,
         output_dict=True,
         zero_division=0
     )
@@ -87,7 +109,7 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
         true_classes,
         predicted_classes,
         labels=labels,
-        target_names=class_names,
+        target_names=sorted_class_names,
         zero_division=0
     ))
     
@@ -117,11 +139,11 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
             per_class_accuracy.append(0.0)
     per_class_accuracy = np.array(per_class_accuracy)
     plt.figure(figsize=(10, 6))
-    plt.bar(range(len(class_names)), per_class_accuracy)
+    plt.bar(range(len(sorted_class_names)), per_class_accuracy)
     plt.xlabel('Fruit Class')
     plt.ylabel('Accuracy')
     plt.title('Per-Class Accuracy')
-    plt.xticks(range(len(class_names)), class_names, rotation=45, ha='right')
+    plt.xticks(range(len(sorted_class_names)), sorted_class_names, rotation=45, ha='right')
     plt.ylim([0, 1])
     plt.grid(axis='y', alpha=0.3)
     plt.tight_layout()
@@ -132,7 +154,7 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
     # Save results
     results = {
         'test_accuracy': float(accuracy),
-        'per_class_accuracy': {name: float(acc) for name, acc in zip(class_names, per_class_accuracy)},
+        'per_class_accuracy': {name: float(acc) for name, acc in zip(sorted_class_names, per_class_accuracy)},
         'classification_report': report,
         'confusion_matrix': cm.tolist()
     }
@@ -143,7 +165,7 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
     
     print(f"\nResults saved to: {results_path}")
     
-    return results, model, test_gen, class_names
+    return results, model, test_gen, sorted_class_names
 
 
 def visualize_predictions(model, test_gen, class_names, num_samples=16, save_dir='../results'):
@@ -221,7 +243,8 @@ def predict_single_image(model_path, image_path, class_names, img_size=(224, 224
     if img.mode != 'RGB':
         img = img.convert('RGB')
     img = img.resize(img_size)
-    img_array = np.array(img) / 255.0
+    # Model has Rescaling(1./255) built in, so keep values in [0, 255] range
+    img_array = np.array(img, dtype=np.float32)  # Keep in [0, 255] range
     img_array = np.expand_dims(img_array, axis=0)
     
     # Predict
