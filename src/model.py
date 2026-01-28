@@ -391,6 +391,125 @@ def build_transfer_learning_model(base_model_name='MobileNetV2',
     return model, preprocess_input
 
 
+def build_stronger_cnn(input_shape=(192, 192, 3), num_classes=10, norm_layer=None):
+    """
+    Build a stronger CNN model from scratch (from train.py)
+    
+    Args:
+        input_shape: Shape of input images
+        num_classes: Number of fruit classes
+        norm_layer: Pre-adapted Normalization layer (optional)
+        
+    Returns:
+        Keras model
+    """
+    wd = 2e-4
+    
+    # Build model components
+    inputs = layers.Input(shape=input_shape, name='input')
+    
+    # We don't include augmentation in the model here because it's handled in the pipeline
+    # during training, or if you want it in the model (like in Notebook_CNN):
+    x = layers.Rescaling(1./255)(inputs)
+    
+    if norm_layer is not None:
+        x = norm_layer(x)
+    
+    # Block 1
+    x = layers.Conv2D(32, 3, padding="same", use_bias=False, 
+                      kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2D(32, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Block 2
+    x = layers.Conv2D(64, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2D(64, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Block 3
+    x = layers.Conv2D(128, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2D(128, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Block 4
+    x = layers.Conv2D(256, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.Conv2D(256, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Block 5
+    x = layers.Conv2D(320, 3, padding="same", use_bias=False,
+                     kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation("relu")(x)
+    x = layers.MaxPooling2D()(x)
+    
+    # Classifier head
+    x = layers.GlobalAveragePooling2D()(x)
+    x = layers.Dropout(0.45)(x)
+    x = layers.Dense(384, activation="relu", kernel_regularizer=regularizers.l2(wd))(x)
+    x = layers.Dropout(0.45)(x)
+    outputs = layers.Dense(num_classes, activation="softmax")(x)
+    
+    model = models.Model(inputs=inputs, outputs=outputs, name='Stronger_CNN')
+    return model
+
+
+def get_model(model_type='stronger_cnn', input_shape=(192, 192, 3), num_classes=10, **kwargs):
+    """
+    Unified model factory
+    
+    Args:
+        model_type: 'baseline', 'notebook', 'stronger_cnn', 'resnet', or transfer model names
+        input_shape: Image input shape
+        num_classes: Number of output classes
+        **kwargs: Additional arguments for specific models (e.g., norm_layer, base_model_name)
+        
+    Returns:
+        Keras model
+    """
+    if model_type == 'baseline':
+        return build_baseline_cnn(input_shape, num_classes)
+    elif model_type == 'notebook':
+        return build_cnn_notebook_style(input_shape, num_classes, kwargs.get('normalization_layer'))
+    elif model_type == 'stronger_cnn':
+        return build_stronger_cnn(input_shape, num_classes, kwargs.get('norm_layer'))
+    elif model_type == 'resnet':
+        return build_cnn_from_scratch(input_shape, num_classes, use_baseline=False)
+    elif model_type == 'transfer':
+        model, _ = build_transfer_learning_model(
+            base_model_name=kwargs.get('base_model_name', 'MobileNetV2'),
+            input_shape=input_shape,
+            num_classes=num_classes,
+            freeze_base=kwargs.get('freeze_base', True)
+        )
+        return model
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+
+
 def compile_model(model, learning_rate=0.001):
     """
     Compile model with Adam optimizer
@@ -403,16 +522,13 @@ def compile_model(model, learning_rate=0.001):
         Compiled model
     """
     optimizer = keras.optimizers.Adam(
-        learning_rate=learning_rate,
-        beta_1=0.9,
-        beta_2=0.999,
-        epsilon=1e-07
+        learning_rate=learning_rate
     )
     
     model.compile(
         optimizer=optimizer,
         loss='categorical_crossentropy',
-        metrics=['accuracy', 'top_k_categorical_accuracy']
+        metrics=['accuracy']
     )
     
     return model
