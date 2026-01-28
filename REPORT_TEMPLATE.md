@@ -91,7 +91,7 @@
 ### 5.1 Image Preprocessing Steps
 
 [Describe preprocessing:
-- Resizing (224x224)
+- Resizing (192x192)
 - Normalization (pixel values 0-1)
 - Any other transformations]
 

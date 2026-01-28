@@ -98,45 +98,47 @@ source_images/
 
 Split your collected images into train/validation/test sets:
 
-```python
-from src.data_preprocessing import FruitDataset
-
-dataset = FruitDataset(data_dir='dataset')
-dataset.split_dataset(
-    source_dir='source_images',
-    train_ratio=0.7,
-    val_ratio=0.15,
-    test_ratio=0.15
-)
+```bash
+python -c "from src.data_preprocessing import FruitDataset; dataset = FruitDataset(data_dir='dataset', img_size=(192, 192)); dataset.split_dataset(source_dir='source_images')"
 ```
 
 ### 2. Training
 
-#### Option A: Transfer Learning (Recommended)
+#### Option A: CNN from Scratch (Optimized)
+
+For Windows users:
+```powershell
+.\start_training.ps1
+```
+
+For Linux/Mac users:
+```bash
+./start_training.sh
+```
+
+Or manually:
+```bash
+python src/train.py \
+    --data_dir dataset \
+    --epochs 50 \
+    --batch_size 32 \
+    --img_size 192 192 \
+    --initial_lr 3e-4 \
+    --save_dir models
+```
+
+#### Option B: Transfer Learning
 
 ```bash
-cd src
-python train.py \
+python src/train_transfer.py \
     --model_type transfer \
     --base_model MobileNetV2 \
-    --data_dir ../dataset \
+    --data_dir dataset \
     --epochs 30 \
     --batch_size 32 \
-    --learning_rate 0.001 \
     --freeze_base
 ```
-
-#### Option B: CNN from Scratch
-
-```bash
-cd src
-python train.py \
-    --model_type scratch \
-    --data_dir ../dataset \
-    --epochs 30 \
-    --batch_size 32 \
-    --learning_rate 0.001
-```
+*(Note: Create a separate script for transfer learning if needed, or update train.py to support it)*
 
 ### 3. Evaluation
 

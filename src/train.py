@@ -120,97 +120,9 @@ def create_datasets(data_dir, img_size=(192, 192), batch_size=32, seed=42):
     return train_ds, val_ds, test_ds, norm, train_ds_raw, class_names, num_classes
 
 
-def build_model(input_shape, num_classes, norm_layer):
-    """
-    Build a slightly stronger CNN model from scratch aimed at ~80–85% test accuracy.
-    
-    Differences vs previous (notebook-style) CNN:
-    - Same input pipeline (MixUp, normalization, cosine LR)
-    - Increased capacity in later layers:
-      * Block 4 now has TWO conv layers with 256 filters
-      * Added Block 5 with 320 filters
-      * Dense layer increased from 256 → 384 units
-    - Regularization kept via L2 + Dropout to control overfitting
-    
-    This keeps the model purely from scratch (no pretraining) but gives it
-    more representational power for the 4k-image Kaggle dataset.
-    """
-    wd = 2e-4  # slightly stronger weight decay for the larger model
-    
-    # Data augmentation
-    data_augmentation = keras.Sequential([
-        layers.RandomFlip("horizontal"),
-        layers.RandomRotation(0.03),
-        layers.RandomZoom(0.08),
-        layers.RandomTranslation(0.03, 0.03),
-    ], name="augment")
-    
-    # Build model
-    inputs = layers.Input(shape=input_shape, name='input')
-    x = data_augmentation(inputs)
-    x = layers.Rescaling(1./255)(x)
-    x = norm_layer(x)
-    
-    # Block 1
-    x = layers.Conv2D(32, 3, padding="same", use_bias=False, 
-                      kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.Conv2D(32, 3, padding="same", use_bias=False,
-                     kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.MaxPooling2D()(x)
-    
-    # Block 2
-    x = layers.Conv2D(64, 3, padding="same", use_bias=False,
-                     kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.Conv2D(64, 3, padding="same", use_bias=False,
-                     kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.MaxPooling2D()(x)
-    
-    # Block 3
-    x = layers.Conv2D(128, 3, padding="same", use_bias=False,
-                     kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.Conv2D(128, 3, padding="same", use_bias=False,
-                     kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.MaxPooling2D()(x)
-    
-    # Block 4 (deeper: two convs with 256 filters)
-    x = layers.Conv2D(256, 3, padding="same", use_bias=False,
-                     kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.Conv2D(256, 3, padding="same", use_bias=False,
-                     kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.MaxPooling2D()(x)
-    
-    # Block 5 (new: 320 filters)
-    x = layers.Conv2D(320, 3, padding="same", use_bias=False,
-                     kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation("relu")(x)
-    x = layers.MaxPooling2D()(x)
-    
-    # Classifier head
-    x = layers.GlobalAveragePooling2D()(x)
-    x = layers.Dropout(0.45)(x)
-    x = layers.Dense(384, activation="relu", kernel_regularizer=regularizers.l2(wd))(x)
-    x = layers.Dropout(0.45)(x)
-    outputs = layers.Dense(num_classes, activation="softmax")(x)
-    
-    model = keras.Model(inputs=inputs, outputs=outputs, name='Stronger_CNN')
-    return model
+from src.model import get_model
+
+# The build_model function is now handled by src.model.get_model
 
 
 def train_improved(data_dir='dataset',
@@ -232,7 +144,7 @@ def train_improved(data_dir='dataset',
     )
     
     print(f"\nBuilding model...")
-    model = build_model((*img_size, 3), num_classes, norm_layer)
+    model = get_model('stronger_cnn', input_shape=(*img_size, 3), num_classes=num_classes, norm_layer=norm_layer)
     
     # Calculate steps for cosine decay
     steps_per_epoch = tf.data.experimental.cardinality(train_ds_raw).numpy()
