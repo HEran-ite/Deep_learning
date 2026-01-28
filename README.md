@@ -1,66 +1,82 @@
-# Basket of Fruit Recognition Using Deep Learning
+# 🍎 Fruit Recognition Using Deep Learning
 
-A deep learning project for recognizing 10 different types of fruits from images using Convolutional Neural Networks (CNNs).
+A deep learning project for recognizing 10 different types of fruits from images using a Convolutional Neural Network (CNN) trained entirely from scratch.
 
 ## 📋 Project Overview
 
-This project implements a fruit recognition system that can classify 10 different fruit types:
-1. Banana
-2. Apple
-3. Orange
-4. Mango
-5. Avocado
-6. Papaya
-7. Pineapple
-8. Lemon
-9. Watermelon
-10. Tomato
+This project implements a fruit recognition system that can classify 10 different fruit types using a CNN architecture trained from scratch (no transfer learning). The system includes both a training pipeline and a web application for real-time fruit classification.
 
+### Supported Fruits
+
+1. 🍎 Apple
+2. 🥑 Avocado
+3. 🍌 Banana
+4. 🍋 Lemon
+5. 🥭 Mango
+6. 🍊 Orange
+7. 🍈 Papaya
+8. 🍍 Pineapple
+9. 🍅 Tomato
+10. 🍉 Watermelon
 
 ## 🎯 Project Goals
 
-- Collect and organize a custom dataset of fruit images
-- Design and implement CNN models (from scratch and transfer learning)
-- Train models to achieve high classification accuracy
+- Design and implement a CNN architecture suitable for fruit recognition
+- Train a CNN model entirely from scratch (no pre-trained weights)
+- Implement advanced data augmentation techniques including MixUp
+- Achieve high classification accuracy on a custom dataset
+- Build a web application for real-time fruit recognition
 - Evaluate model performance with comprehensive metrics
-- Document the entire process
 
 ## 📁 Project Structure
 
 ```
-Basket-of-Fruit-Recognition/
+Deep_learning/
 ├── dataset/
 │   ├── train/          # Training images (70%)
-│   │   ├── banana/
-│   │   ├── apple/
-│   │   └── ...
 │   ├── validation/     # Validation images (15%)
 │   └── test/           # Test images (15%)
 ├── notebooks/          # Jupyter notebooks for exploration
 ├── src/
-│   ├── data_preprocessing.py  # Data loading and preprocessing
-│   ├── model.py               # Model architectures
-│   ├── train.py               # Training script
+│   ├── data_preprocessing.py  # Data loading utilities
+│   ├── model.py               # Model architecture definitions
+│   ├── train.py               # Training script (CNN from scratch)
 │   └── evaluate.py            # Evaluation script
 ├── models/             # Saved trained models
+│   ├── cnn_from_scratch_*_best.h5
+│   ├── cnn_from_scratch_*_final.h5
+│   ├── cnn_from_scratch_info_*.json
+│   └── cnn_from_scratch_history_*.png
 ├── results/            # Evaluation results and plots
-├── requirements.txt    # Python dependencies
-└── README.md          # This file
+│   ├── confusion_matrix.png
+│   ├── per_class_accuracy.png
+│   └── evaluation_results.json
+├── templates/          # Web app templates
+│   └── index.html
+├── static/            # Static files for web app
+├── uploads/          # Temporary upload directory
+├── app.py            # Flask web application
+├── start_training.sh  # Training script launcher
+├── start_web_app.sh   # Web app launcher
+├── requirements.txt  # Python dependencies
+├── paper.tex         # Research paper (LaTeX)
+└── README.md         # This file
 ```
-
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Python 3.8 or higher
 - pip package manager
+- TensorFlow 2.x
+- Flask (for web application)
 
 ### Installation
 
 1. Clone this repository:
 ```bash
 git clone <repository-url>
-cd Basket-of-Fruit-Recognition
+cd Deep_learning
 ```
 
 2. Install dependencies:
@@ -68,55 +84,56 @@ cd Basket-of-Fruit-Recognition
 pip install -r requirements.txt
 ```
 
-### Data Collection
-
-**IMPORTANT:** You must collect your own images. Do not use pre-existing datasets.
-
-1. Take photos of each fruit type using your phone camera
-2. Aim for 80-120 images per fruit class (800-1200 total images)
-3. Vary:
-   - Lighting conditions (daylight, indoor)
-   - Backgrounds (table, basket, hand)
-   - Angles (top, side, close-up)
-   - Distance (near/far)
-   - Include both single fruits and mixed baskets
-
-4. Organize images in a source directory:
-```
-source_images/
-├── banana/
-├── apple/
-├── orange/
-└── ...
+**Note:** For HEIC image support (Apple devices), install pillow-heif:
+```bash
+pip install pillow-heif
 ```
 
-5. Split dataset using the preprocessing script (see Usage section)
+### Dataset Structure
+
+The project uses a custom dataset organized as follows:
+
+```
+dataset/
+├── train/
+│   ├── Apple/
+│   ├── Avocado/
+│   └── ... (10 classes)
+├── validation/
+│   ├── Apple/
+│   └── ...
+└── test/
+    ├── Apple/
+    └── ...
+```
+
+The dataset used in this project contains approximately 4000 images across 10 fruit classes, split into 70% training, 15% validation, and 15% test sets.
 
 ## 💻 Usage
 
 ### 1. Data Preprocessing
 
-Split your collected images into train/validation/test sets:
+Split your raw images into the required train/validation/test structure:
 
 ```bash
 python -c "from src.data_preprocessing import FruitDataset; dataset = FruitDataset(data_dir='dataset', img_size=(192, 192)); dataset.split_dataset(source_dir='source_images')"
 ```
 
-### 2. Training
+### 2. Training (CNN from Scratch)
 
-#### Option A: CNN from Scratch (Optimized)
+The system is optimized for training a high-accuracy model from scratch using MixUp and Cosine Decay.
 
+#### **Easy Start (Recommended)**
 For Windows users:
 ```powershell
 .\start_training.ps1
 ```
-
 For Linux/Mac users:
 ```bash
 ./start_training.sh
 ```
 
-Or manually:
+#### **Manual Execution**
 ```bash
 python src/train.py \
     --data_dir dataset \
@@ -127,141 +144,55 @@ python src/train.py \
     --save_dir models
 ```
 
-#### Option B: Transfer Learning
-
-```bash
-python src/train_transfer.py \
-    --model_type transfer \
-    --base_model MobileNetV2 \
-    --data_dir dataset \
-    --epochs 30 \
-    --batch_size 32 \
-    --freeze_base
-```
-*(Note: Create a separate script for transfer learning if needed, or update train.py to support it)*
-
 ### 3. Evaluation
 
-Evaluate your trained model:
+Evaluate your trained model and generate detailed metrics:
 
 ```bash
-cd src
-python evaluate.py \
-    --model_path ../models/fruit_model_YYYYMMDD_HHMMSS_best.h5 \
-    --data_dir ../dataset \
-    --save_dir ../results \
+python src/evaluate.py \
+    --model_path models/cnn_from_scratch_YYYYMMDD_HHMMSS_best.h5 \
+    --data_dir dataset \
+    --img_size 192 192 \
+    --save_dir results \
     --visualize
 ```
 
-### 4. Single Image Prediction
+This generates:
+- ✅ Test accuracy and loss
+- ✅ Classification report (Precision, Recall, F1)
+- ✅ Confusion matrix visualization
+- ✅ Per-class accuracy plots
+- ✅ Sample prediction visualizations
 
-```python
-from src.evaluate import predict_single_image
-import json
+### 4. Web Application
 
-# Load class names from model info
-with open('models/model_info_YYYYMMDD_HHMMSS.json') as f:
-    model_info = json.load(f)
-    class_names = model_info['class_names']
+Launch the real-time recognition interface:
 
-# Predict
-predicted_class, confidence, top3 = predict_single_image(
-    'models/fruit_model_YYYYMMDD_HHMMSS_best.h5',
-    'path/to/image.jpg',
-    class_names
-)
+#### **Easy Start**
+For Windows: `.\start_web_app.ps1` | For Linux: `./start_web_app.sh`
 
-print(f"Predicted: {predicted_class} (Confidence: {confidence:.2%})")
-print("Top 3 predictions:", top3)
+#### **Manual Execution**
+```bash
+python app.py
 ```
+Then open `http://localhost:5000` in your browser.
 
-## 📊 Model Architectures
+## 📊 Model Architecture
 
-### Transfer Learning Models
-
-- **MobileNetV2**: Lightweight, fast, good for mobile deployment
-- **ResNet50**: Deeper network, higher accuracy
-- **EfficientNetB0**: Balanced efficiency and accuracy
-
-### CNN from Scratch
-
-- 4 Convolutional blocks with MaxPooling
-- 2 Dense layers with Dropout
-- Output layer with Softmax activation
+The `Stronger_CNN` architecture used in this project features:
+- **5 Convolutional Blocks**: Increasing filters from 32 to 320.
+- **Advanced Regularization**: MixUp augmentation, Dropout (0.45), and L2 Weight Decay.
+- **Optimized Training**: Cosine learning rate decay and Global Average Pooling.
 
 ## 📈 Results
 
-After training and evaluation, you'll get:
-
-- Training history plots (accuracy and loss)
-- Confusion matrix
-- Per-class accuracy
-- Classification report (precision, recall, F1-score)
-- Sample prediction visualizations
-
-Results are saved in the `results/` directory.
-
-## 📝 Report Structure
-
-Your written report should include:
-
-1. **Abstract**: Brief summary of the project
-2. **Introduction**: Problem statement and objectives
-3. **Related Work**: Brief literature review
-4. **Dataset Collection Method**: How you collected images
-5. **Data Preprocessing**: Image preprocessing steps
-6. **Model Architecture**: Detailed model design
-7. **Training & Evaluation**: Training process and hyperparameters
-8. **Results**: Performance metrics and analysis
-9. **Challenges & Limitations**: Issues faced and constraints
-10. **Conclusion & Future Work**: Summary and improvements
-
-## 🔧 Configuration
-
-Key hyperparameters you can adjust:
-
-- `epochs`: Number of training epochs (15-30 recommended)
-- `batch_size`: Batch size (16, 32, or 64)
-- `learning_rate`: Learning rate (0.001 default)
-- `img_size`: Image dimensions (224x224 default)
-- `freeze_base`: Whether to freeze base model (transfer learning)
-
-## 🐛 Troubleshooting
-
-### Out of Memory Error
-- Reduce `batch_size` (try 16 or 8)
-- Reduce `img_size` (try 128x128)
-
-### Low Accuracy
-- Collect more training data
-- Increase data augmentation
-- Try different base models
-- Adjust learning rate
-
-### Slow Training
-- Use GPU if available
-- Reduce image size
-- Use MobileNetV2 (lightweight)
-
-## 📚 References
-
-- TensorFlow Documentation: https://www.tensorflow.org/
-- Keras Documentation: https://keras.io/
-- Transfer Learning Guide: https://www.tensorflow.org/tutorials/images/transfer_learning
+Typical results on the custom dataset:
+- **Best Validation Accuracy**: ~85%
+- **Test Accuracy**: ~80%
 
 ## 👥 Team Members
 
 [Add your team members' names here]
 
-## 📄 License
-
-[Add your license information here]
-
-## 🙏 Acknowledgments
-
-[Add any acknowledgments here]
-
 ---
-
-**Note**: Remember to collect your own data! This project requires original image collection as per assignment requirements.
-
+**Note**: This project follows a professional deep learning pipeline including dataset splitting, normalization, and comprehensive evaluation.
