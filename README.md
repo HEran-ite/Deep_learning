@@ -197,3 +197,206 @@ This generates:
 ### 4. Web Application
 
 Run the Flask web application for real-time fruit recognition:
+
+#### Quick Start (Using Shell Script)
+```bash
+./start_web_app.sh
+```
+
+#### Manual Start
+```bash
+python3 app.py
+```
+
+Then open your browser and navigate to:
+- `http://localhost:5000` or
+- `http://127.0.0.1:5000`
+
+**Features:**
+- 📤 Upload images (JPG, PNG, HEIC supported)
+- 📷 Live camera capture
+- 🎯 Real-time fruit classification
+- 📊 Top-3 predictions with confidence scores
+- 🎨 Modern, responsive UI
+
+**Supported Image Formats:**
+- JPEG/JPG
+- PNG
+- HEIC/HEIF (Apple devices)
+
+**File Size Limit:** 32MB
+
+### 5. Single Image Prediction (Python)
+
+```python
+from src.evaluate import predict_single_image
+import json
+
+# Load class names from model info
+with open('models/cnn_from_scratch_info_YYYYMMDD_HHMMSS.json') as f:
+    model_info = json.load(f)
+    class_names = model_info['class_names']
+
+# Predict
+predicted_class, confidence, top3 = predict_single_image(
+    'models/cnn_from_scratch_YYYYMMDD_HHMMSS_best.h5',
+    'path/to/image.jpg',
+    class_names,
+    img_size=(192, 192)
+)
+
+print(f"Predicted: {predicted_class} (Confidence: {confidence:.2%})")
+print("Top 3 predictions:", top3)
+```
+
+## 📊 Results
+
+### Model Performance
+
+The best model achieved the following performance:
+
+- **Test Accuracy**: 80.17%
+- **Validation Accuracy**: 85.83%
+- **Test Loss**: 1.04
+
+**Training Configuration:**
+- Epochs: 70
+- Batch Size: 32
+- Image Size: 192×192
+- Initial Learning Rate: 2×10⁻⁴ (cosine decay)
+- Optimizer: Adam
+- Loss: Categorical Crossentropy
+
+**Key Techniques:**
+- MixUp augmentation (α=0.2)
+- Advanced data augmentation
+- Normalization layer adapted on training data
+- L2 regularization (weight decay: 2×10⁻⁴)
+- Dropout (0.45) in classifier head
+- Early stopping (patience: 10 epochs)
+
+### Per-Class Performance
+
+The model shows varying performance across fruit classes:
+- **Best performing**: Watermelon (100% accuracy)
+- **Strong performance**: Avocado (88% F1-score), Papaya (80% F1-score)
+- **Challenging classes**: Lemon, Mango (lower recall)
+
+Detailed per-class metrics are available in `results/evaluation_results.json` and visualized in `results/per_class_accuracy.png`.
+
+## 🔧 Configuration
+
+### Key Hyperparameters
+
+- **Epochs**: 50-70 (use early stopping)
+- **Batch Size**: 32 (reduce to 16 if OOM)
+- **Learning Rate**: 2×10⁻⁴ to 3×10⁻⁴ (with cosine decay)
+- **Image Size**: 192×192 (optimal for this dataset)
+- **MixUp α**: 0.2 (standard)
+- **Dropout**: 0.45 (classifier head)
+- **Weight Decay**: 2×10⁻⁴ (L2 regularization)
+
+### Training Tips
+
+1. **Monitor Training**: Check `logs/` directory for training logs
+2. **Early Stopping**: Model automatically stops if validation accuracy doesn't improve for 10 epochs
+3. **Best Model**: Always use `*_best.h5` for evaluation (not `*_final.h5`)
+4. **GPU Recommended**: Training is faster on GPU, but works on CPU too
+
+## 🐛 Troubleshooting
+
+### Out of Memory Error
+- Reduce `batch_size` to 16 or 8
+- Reduce `img_size` to 128×128 (may affect accuracy)
+
+### Low Accuracy
+- Collect more training data (aim for 100+ images per class)
+- Increase data augmentation strength
+- Train for more epochs (with early stopping)
+- Adjust learning rate
+
+### Slow Training
+- Use GPU if available (TensorFlow will auto-detect)
+- Reduce image size (but may affect accuracy)
+- Reduce batch size
+
+### Web App Issues
+- **Port 5000 in use**: Run `lsof -ti:5000 | xargs kill -9` or use `start_web_app.sh`
+- **Model not loading**: Ensure model files exist in `models/` directory
+- **HEIC not working**: Install `pillow-heif`: `pip install pillow-heif`
+
+## 📝 Research Paper
+
+The project includes a comprehensive research paper (`paper.tex`) covering:
+- Introduction and problem statement
+- Related work and literature review
+- Dataset collection methodology
+- Model architecture and training methodology
+- Experimental results and analysis
+- Challenges, limitations, and future work
+
+Compile the paper using LaTeX:
+```bash
+pdflatex paper.tex
+```
+
+## 📚 Technical Details
+
+### Data Augmentation
+
+**During Training:**
+- MixUp (α=0.2): Mixes pairs of images and labels
+- Random horizontal flip
+- Random rotation (±3%)
+- Random zoom (±8%)
+- Random translation (±3%)
+
+**During Inference:**
+- No augmentation (deterministic predictions)
+
+### Training Pipeline
+
+1. Load and preprocess images (resize to 192×192)
+2. Create tf.data datasets with one-hot encoding
+3. Adapt normalization layer on training data
+4. Apply MixUp augmentation to training set
+5. Train with cosine decay learning rate
+6. Monitor validation accuracy for early stopping
+7. Save best model based on validation accuracy
+
+### Model Selection
+
+The best model is selected based on:
+- **Primary metric**: Validation accuracy
+- **Checkpointing**: Saves model with highest validation accuracy
+- **Early stopping**: Stops training if no improvement for 10 epochs
+
+## 🎓 Educational Value
+
+This project demonstrates:
+- CNN architecture design from scratch
+- Advanced data augmentation (MixUp)
+- Learning rate scheduling (cosine decay)
+- Model regularization (L2, dropout)
+- Proper train/validation/test splits
+- Comprehensive evaluation metrics
+- Web application deployment
+
+## 📄 License
+
+[Add your license information here]
+
+## 👥 Authors
+
+[Add your name/team members here]
+
+## 🙏 Acknowledgments
+
+- Dataset: Kaggle - "4000 Images of Local Fruits in Ethiopia"
+- TensorFlow/Keras for deep learning framework
+- Flask for web application framework
+
+---
+
+**Note**: This project focuses exclusively on CNN training from scratch. No transfer learning or pre-trained models are used, demonstrating that effective fruit recognition can be achieved through careful architecture design and training strategies.
+
