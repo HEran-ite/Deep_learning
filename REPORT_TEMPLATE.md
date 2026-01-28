@@ -72,8 +72,16 @@ To reduce overfitting and improve generalization, data augmentation techniques w
 
 ### 5.3 Implementation
 
+
 Preprocessing and augmentation were implemented using TensorFlow and Keras preprocessing layers within the training pipeline.
 
 ---
 
 ## 6. Model Architecture
+### 6.1 Model Selection
+
+A CNN trained from scratch was chosen to better understand feature learning without relying on pre-trained weights. This approach allows the model to learn fruit-specific features directly from the dataset.
+
+### 6.2 Architecture Details (CNN from Scratch)
+
+The model consists of five convolutional blocks with increasing filter sizes (32, 64, 128, 256, 320), each followed by batch normalization, ReLU activation, and max pooling. A global average pooling layer and fully connected layers with dropout are used for classification.
