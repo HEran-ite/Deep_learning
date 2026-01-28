@@ -190,10 +190,6 @@ Typical results on the custom dataset:
 - **Best Validation Accuracy**: ~85%
 - **Test Accuracy**: ~80%
 
-##  Team Members
-
-[Add your team members' names here]
-
 ---
 **Note**: This project follows a professional deep learning pipeline including dataset splitting, normalization, and comprehensive evaluation.
 Run the Flask web application for real-time fruit recognition:
