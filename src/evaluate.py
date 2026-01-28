@@ -70,8 +70,7 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
         shuffle=False
     )
     
-    # Get class names in the order used by the generator
-    # The generator's class_indices maps class names to indices
+
     generator_class_indices = test_gen.class_indices
     # Create sorted list of class names by their index
     sorted_class_names = sorted(generator_class_indices.keys(), key=lambda x: generator_class_indices[x])
@@ -243,7 +242,6 @@ def predict_single_image(model_path, image_path, class_names, img_size=(224, 224
     if img.mode != 'RGB':
         img = img.convert('RGB')
     img = img.resize(img_size)
-    # Model has Rescaling(1./255) built in, so keep values in [0, 255] range
     img_array = np.array(img, dtype=np.float32)  # Keep in [0, 255] range
     img_array = np.expand_dims(img_array, axis=0)
     
