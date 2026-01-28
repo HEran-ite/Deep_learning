@@ -1,8 +1,3 @@
-"""
-Improved Training Script - Fixed for High Accuracy
-Fixes normalization, MixUp, and training pipeline issues
-"""
-
 import os
 import argparse
 import json
@@ -166,11 +161,7 @@ def train_improved(data_dir='dataset',
     print("\nModel Summary:")
     model.summary()
     
-    # Callbacks
-    # IMPORTANT: We already use a LearningRateSchedule (CosineDecay) for the optimizer.
-    # ReduceLROnPlateau tries to set optimizer.learning_rate directly, which is not allowed
-    # when a schedule object is used and causes a TypeError.
-    # Therefore, we ONLY use ModelCheckpoint + EarlyStopping + CSVLogger here.
+
     callbacks = [
         keras.callbacks.ModelCheckpoint(
             filepath=model_save_path + '_best.h5',
