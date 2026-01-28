@@ -19,7 +19,7 @@ mkdir -p logs
 # Start training
 echo "📊 Training Configuration:"
 echo "   - Model: CNN from Scratch"
-echo "   - Architecture: 4 Conv blocks (32→64→128→256)"
+echo "   - Architecture: 5 Conv blocks (32→64→128→256→320)"
 echo "   - Epochs: 50"
 echo "   - Batch Size: 32"
 echo "   - Learning Rate: 3e-4 (cosine decay)"
@@ -29,7 +29,7 @@ echo ""
 echo "Starting training..."
 echo ""
 
-python3 src/train_improved.py \
+python src/train.py \
     --data_dir dataset \
     --epochs 50 \
     --batch_size 32 \
