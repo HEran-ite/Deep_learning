@@ -1,8 +1,3 @@
-"""
-Fruit Recognition Web Application
-Upload an image and get real-time fruit classification
-"""
-
 import os
 import numpy as np
 from flask import Flask, render_template, request, jsonify, send_from_directory
@@ -11,6 +6,7 @@ from PIL import Image
 import tensorflow as tf
 from tensorflow import keras
 import json
+
 
 # Support for HEIC images
 try:
@@ -25,18 +21,19 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max file size
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'heic', 'HEIC'}
 
+
 # Create uploads directory
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('static', exist_ok=True)
 
 from src.data_preprocessing import preprocess_image as unify_preprocess
 
-# Global variables for models (CNN only)
+
 cnn_model = None
 class_names = None
 
 # Global variable to store model image size
-model_img_size = (192, 192)  # Default, will be updated from model info
+model_img_size = (192, 192)
 
 
 # Load class names from latest model info
@@ -55,7 +52,7 @@ def load_class_names():
                 img_size = info.get('img_size', [192, 192])
                 if isinstance(img_size, list) and len(img_size) == 2:
                     model_img_size = tuple(img_size)
-                print(f"✅ Loaded model info: {len(class_names)} classes, image size: {model_img_size}")
+                print(f"Loaded model info: {len(class_names)} classes, image size: {model_img_size}")
                 return class_names
     except Exception as e:
         print(f"Error loading class names: {e}")
@@ -77,12 +74,12 @@ def load_models():
         cnn_path = os.path.join('models', latest_cnn)
         try:
             cnn_model = keras.models.load_model(cnn_path)
-            print(f"✅ Loaded CNN from scratch model: {latest_cnn}")
+            print(f"Loaded CNN from scratch model: {latest_cnn}")
             print(f"   Model image size: {model_img_size}")
         except Exception as e:
-            print(f"❌ Error loading CNN model: {e}")
+            print(f"Error loading CNN model: {e}")
     else:
-        print("⚠️  No CNN from scratch model found")
+        print("  No CNN from scratch model found")
     
     # No transfer learning models are used in this version (CNN-only)
 
@@ -245,19 +242,19 @@ def request_entity_too_large(error):
 if __name__ == '__main__':
     print("Loading models...")
     load_models()
-    print("\n🚀 Starting Fruit Recognition Web App...")
-    print("📱 Open your browser and go to: http://localhost:5000")
-    print("📸 Upload a fruit image to get predictions!")
-    print("⚠️  If port 5000 is busy, try: http://127.0.0.1:5000")
-    print("⚠️  Press Ctrl+C to stop the server\n")
+    print("\n Starting Fruit Recognition Web App...")
+    print(" Open your browser and go to: http://localhost:5000")
+    print(" Upload a fruit image to get predictions!")
+    print(" If port 5000 is busy, try: http://127.0.0.1:5000")
+    print("  Press Ctrl+C to stop the server\n")
     try:
         app.run(debug=True, host='127.0.0.1', port=5000, use_reloader=False)
     except OSError as e:
         if "Address already in use" in str(e):
-            print(f"\n❌ Port 5000 is already in use!")
-            print("💡 Try these solutions:")
+            print(f"\n Port 5000 is already in use!")
+            print(" Try these solutions:")
             print("   1. Kill existing process: lsof -ti:5000 | xargs kill -9")
             print("   2. Use different port: python3 -c \"from app import app; app.run(port=5001)\"")
         else:
-            print(f"\n❌ Error starting server: {e}")
+            print(f"\n Error starting server: {e}")
 

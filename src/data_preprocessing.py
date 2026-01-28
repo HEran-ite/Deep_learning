@@ -1,8 +1,3 @@
-"""
-Data Preprocessing Module
-Handles image loading, augmentation, and dataset preparation
-"""
-
 import os
 import numpy as np
 from PIL import Image
@@ -20,10 +15,10 @@ try:
     HEIC_SUPPORT = True
 except ImportError:
     HEIC_SUPPORT = False
-    print("Warning: pillow-heif not installed. HEIC images may not load properly.")
-    print("Install with: pip install pillow-heif")
+    print("Warning : pillow-heif not installed. HEIC images may not load properly.")
+    print("Install with : pip install pillow-heif")
 
-# Image extensions to support
+# Image extensions support
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.heic', '.HEIC')
 
 
@@ -233,4 +228,5 @@ def preprocess_image(image_path, img_size=(192, 192), rescale=False):
     except Exception as e:
         print(f"Error preprocessing image {image_path}: {e}")
         return None
+
 

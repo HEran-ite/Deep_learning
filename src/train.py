@@ -1,7 +1,3 @@
-"""
-Improved Training Script - Fixed for High Accuracy
-Fixes normalization, MixUp, and training pipeline issues
-"""
 
 import os
 import argparse
@@ -15,6 +11,7 @@ import numpy as np
 
 # Disable JIT for stability
 tf.config.optimizer.set_jit(False)
+
 
 
 def create_datasets(data_dir, img_size=(192, 192), batch_size=32, seed=42):
@@ -31,6 +28,7 @@ def create_datasets(data_dir, img_size=(192, 192), batch_size=32, seed=42):
     )
     num_classes = len(class_names)
     print(f"Found {num_classes} classes: {class_names}")
+
     
     # Build raw datasets
     train_ds_raw = keras.utils.image_dataset_from_directory(
@@ -166,11 +164,7 @@ def train_improved(data_dir='dataset',
     print("\nModel Summary:")
     model.summary()
     
-    # Callbacks
-    # IMPORTANT: We already use a LearningRateSchedule (CosineDecay) for the optimizer.
-    # ReduceLROnPlateau tries to set optimizer.learning_rate directly, which is not allowed
-    # when a schedule object is used and causes a TypeError.
-    # Therefore, we ONLY use ModelCheckpoint + EarlyStopping + CSVLogger here.
+
     callbacks = [
         keras.callbacks.ModelCheckpoint(
             filepath=model_save_path + '_best.h5',
@@ -258,7 +252,7 @@ def train_improved(data_dir='dataset',
     with open(info_path, 'w') as f:
         json.dump(info, f, indent=2)
     
-    print(f"\n✅ Training completed!")
+    print(f"\n Training completed!")
     print(f"Best val accuracy: {max(history.history['val_accuracy']):.4f}")
     print(f"Test accuracy: {test_acc:.4f}")
     

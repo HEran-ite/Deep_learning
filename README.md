@@ -1,8 +1,8 @@
-# 🍎 Fruit Recognition Using Deep Learning
+#  Fruit Recognition Using Deep Learning
 
 A deep learning project for recognizing 10 different types of fruits from images using a Convolutional Neural Network (CNN) trained entirely from scratch.
 
-## 📋 Project Overview
+##  Project Overview
 
 This project implements a fruit recognition system that can classify 10 different fruit types using a CNN architecture trained from scratch (no transfer learning). The system includes both a training pipeline and a web application for real-time fruit classification.
 
@@ -19,7 +19,7 @@ This project implements a fruit recognition system that can classify 10 differen
 9. 🍅 Tomato
 10. 🍉 Watermelon
 
-## 🎯 Project Goals
+##  Project Goals
 
 - Design and implement a CNN architecture suitable for fruit recognition
 - Train a CNN model entirely from scratch (no pre-trained weights)
@@ -28,7 +28,7 @@ This project implements a fruit recognition system that can classify 10 differen
 - Build a web application for real-time fruit recognition
 - Evaluate model performance with comprehensive metrics
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 Deep_learning/
@@ -75,7 +75,7 @@ Deep_learning/
 
 1. Clone this repository:
 ```bash
-git clone <repository-url>
+git clone <(https://github.com/HEran-ite/Deep_learning.git)>
 cd Deep_learning
 ```
 
@@ -158,11 +158,11 @@ python src/evaluate.py \
 ```
 
 This generates:
-- ✅ Test accuracy and loss
-- ✅ Classification report (Precision, Recall, F1)
-- ✅ Confusion matrix visualization
-- ✅ Per-class accuracy plots
-- ✅ Sample prediction visualizations
+- Test accuracy and loss
+- Classification report (Precision, Recall, F1)
+- Confusion matrix visualization
+- Per-class accuracy plots
+- Sample prediction visualizations
 
 ### 4. Web Application
 
@@ -177,20 +177,20 @@ python app.py
 ```
 Then open `http://localhost:5000` in your browser.
 
-## 📊 Model Architecture
+##  Model Architecture
 
 The `Stronger_CNN` architecture used in this project features:
 - **5 Convolutional Blocks**: Increasing filters from 32 to 320.
 - **Advanced Regularization**: MixUp augmentation, Dropout (0.45), and L2 Weight Decay.
 - **Optimized Training**: Cosine learning rate decay and Global Average Pooling.
 
-## 📈 Results
+##  Results
 
 Typical results on the custom dataset:
 - **Best Validation Accuracy**: ~85%
 - **Test Accuracy**: ~80%
 
-## 👥 Team Members
+##  Team Members
 
 [Add your team members' names here]
 
@@ -213,11 +213,11 @@ Then open your browser and navigate to:
 - `http://127.0.0.1:5000`
 
 **Features:**
-- 📤 Upload images (JPG, PNG, HEIC supported)
-- 📷 Live camera capture
-- 🎯 Real-time fruit classification
-- 📊 Top-3 predictions with confidence scores
-- 🎨 Modern, responsive UI
+-  Upload images (JPG, PNG, HEIC supported)
+-  Live camera capture
+-  Real-time fruit classification
+-  Top-3 predictions with confidence scores
+-  Modern, responsive UI
 
 **Supported Image Formats:**
 - JPEG/JPG
@@ -249,7 +249,7 @@ print(f"Predicted: {predicted_class} (Confidence: {confidence:.2%})")
 print("Top 3 predictions:", top3)
 ```
 
-## 📊 Results
+##  Results
 
 ### Model Performance
 
@@ -284,7 +284,7 @@ The model shows varying performance across fruit classes:
 
 Detailed per-class metrics are available in `results/evaluation_results.json` and visualized in `results/per_class_accuracy.png`.
 
-## 🔧 Configuration
+##  Configuration
 
 ### Key Hyperparameters
 
@@ -303,7 +303,7 @@ Detailed per-class metrics are available in `results/evaluation_results.json` an
 3. **Best Model**: Always use `*_best.h5` for evaluation (not `*_final.h5`)
 4. **GPU Recommended**: Training is faster on GPU, but works on CPU too
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### Out of Memory Error
 - Reduce `batch_size` to 16 or 8
@@ -325,7 +325,7 @@ Detailed per-class metrics are available in `results/evaluation_results.json` an
 - **Model not loading**: Ensure model files exist in `models/` directory
 - **HEIC not working**: Install `pillow-heif`: `pip install pillow-heif`
 
-## 📝 Research Paper
+##  Research Paper
 
 The project includes a comprehensive research paper (`paper.tex`) covering:
 - Introduction and problem statement
@@ -340,7 +340,7 @@ Compile the paper using LaTeX:
 pdflatex paper.tex
 ```
 
-## 📚 Technical Details
+##  Technical Details
 
 ### Data Augmentation
 
@@ -371,7 +371,7 @@ The best model is selected based on:
 - **Checkpointing**: Saves model with highest validation accuracy
 - **Early stopping**: Stops training if no improvement for 10 epochs
 
-## 🎓 Educational Value
+##  Educational Value
 
 This project demonstrates:
 - CNN architecture design from scratch
@@ -382,15 +382,15 @@ This project demonstrates:
 - Comprehensive evaluation metrics
 - Web application deployment
 
-## 📄 License
+##  Group Members
+- Heran Eshetu
+- Iman Ibrahim
+- Ruhama Yohannes
+- Samrawit Kahsay
+- Yordanos Melaku
 
-[Add your license information here]
 
-## 👥 Authors
-
-[Add your name/team members here]
-
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - Dataset: Kaggle - "4000 Images of Local Fruits in Ethiopia"
 - TensorFlow/Keras for deep learning framework
