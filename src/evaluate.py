@@ -3,6 +3,7 @@ Evaluation Script
 Evaluate trained model and generate metrics, confusion matrix, and sample predictions
 """
 
+
 import os
 import json
 import numpy as np
@@ -49,7 +50,7 @@ def evaluate_model(model_path, data_dir, img_size=(224, 224), batch_size=32, sav
     # Load model
     model = load_model(model_path)
     
-    # Load dataset
+
     # Note: We need to use img_size that matches the model
     # The model has Rescaling(1./255) built in, so ImageDataGenerator should NOT rescale
     # We'll create a custom generator without rescaling
